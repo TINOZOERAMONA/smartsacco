@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478118410168",
+    "project_id": "smartsacco-df4ce",
+    "storage_bucket": "smartsacco-df4ce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478118410168:android:015bef1f7105314e77814d",
+        "android_client_info": {
+          "package_name": "com.example.smartsacco"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDF37gxqirrO82u3DfLOVpassLcg5b9KUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
