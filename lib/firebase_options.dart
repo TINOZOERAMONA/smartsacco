@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -70,6 +67,15 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDF_CropfRkSoTzv6EYy4Oc0tKkxQXw3nU',
+    appId: '1:478118410168:web:9f53b773ffb6f0e777814d',
+    messagingSenderId: '478118410168',
+    projectId: 'smartsacco-df4ce',
+    authDomain: 'smartsacco-df4ce.firebaseapp.com',
+    storageBucket: 'smartsacco-df4ce.firebasestorage.app',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDF_CropfRkSoTzv6EYy4Oc0tKkxQXw3nU',
     appId: '1:478118410168:web:9f53b773ffb6f0e777814d',
     messagingSenderId: '478118410168',
