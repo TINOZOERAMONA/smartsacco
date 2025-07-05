@@ -123,6 +123,45 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
         ],
       ),
     );
+     if (result == true) {
+      final amount = double.parse(amountController.text);
+      final phone = phoneController.text;
+
+      // Simulate payment processing
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(seconds: 2));
+
+      final newDeposit = Deposit(
+        id: 'DEP-${DateTime.now().millisecondsSinceEpoch}',
+        amount: amount,
+        date: DateTime.now(),
+        method: 'Mobile Money',
+        status: 'Pending',
+        reference: 'MM-${DateTime.now().millisecondsSinceEpoch}',
+        phoneNumber: phone,
+      );
+
+      setState(() {
+        _deposits.insert(0, newDeposit);
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment initiated successfully!')),
+      );
+    }
+  }
+
+  List<Deposit> get _filteredDeposits {
+    if (_searchController.text.isEmpty) return _deposits;
+    return _deposits.where((deposit) {
+      return deposit.id.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+          deposit.reference.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+          (deposit.phoneNumber?.toLowerCase().contains(_searchController.text.toLowerCase()) ?? false) ||
+          deposit.amount.toString().contains(_searchController.text);
+    }).toList();
+  }
+
 
 
 
