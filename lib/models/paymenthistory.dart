@@ -161,6 +161,211 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           deposit.amount.toString().contains(_searchController.text);
     }).toList();
   }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Deposit History'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadDeposits,
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _initiateMomoPayment(context),
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Search deposits',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (value) => setState(() {}),
+            ),
+          ),
+          Expanded(
+            child: _buildBody(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_errorMessage),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadDeposits,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_filteredDeposits.isEmpty) {
+      return const Center(child: Text('No deposits found'));
+    }
+
+    return ListView.builder(
+      itemCount: _filteredDeposits.length,
+      itemBuilder: (context, index) {
+        final deposit = _filteredDeposits[index];
+        return _buildDepositCard(deposit);
+      },
+    );
+  }
+
+  Widget _buildDepositCard(Deposit deposit) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: InkWell(
+        onTap: () => _showDepositDetails(deposit),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    deposit.getAmountText(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: deposit.getStatusColor().withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      deposit.status.toUpperCase(),
+                      style: TextStyle(
+                        color: deposit.getStatusColor(),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('Method: ${deposit.method}'),
+              const SizedBox(height: 4),
+              Text('Date: ${deposit.getFormattedDate()}'),
+              if (deposit.phoneNumber != null) ...[
+                const SizedBox(height: 4),
+                Text('Phone: ${deposit.phoneNumber}'),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDepositDetails(Deposit deposit) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Text(
+                  'Deposit Details',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildDetailRow('Deposit ID:', deposit.id),
+              _buildDetailRow('Amount:', deposit.getAmountText()),
+              _buildDetailRow('Status:', deposit.status),
+              _buildDetailRow('Method:', deposit.method),
+              _buildDetailRow('Date:', deposit.getFormattedDate()),
+              if (deposit.phoneNumber != null)
+                _buildDetailRow('Phone:', deposit.phoneNumber!),
+              _buildDetailRow('Reference:', deposit.reference),
+              const SizedBox(height: 24),
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
