@@ -39,3 +39,41 @@ class PaymentConfirmationPage extends StatelessWidget {
                 color: isSuccess ? Colors.green : Colors.red,
               ),
             ),
+            const SizedBox(height: 16),
+            Text(
+              isSuccess 
+                  ? 'Your deposit has been initiated successfully'
+                  : 'There was an error processing your payment',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 32),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildDetailRow('Amount:', 'UGX ${NumberFormat('#,##0.00').format(amount)}'),
+                    _buildDetailRow('Method:', method),
+                    _buildDetailRow('Transaction ID:', transactionId),
+                    if (phone != 'N/A') _buildDetailRow('Phone:', phone),
+                    _buildDetailRow('Date:', DateFormat('MMM d, y hh:mm a').format(DateTime.now())),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+                child: const Text('Back to Dashboard'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
