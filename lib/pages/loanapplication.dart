@@ -265,6 +265,70 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
     );
   }
 
+   Widget _buildRepaymentRow(String label, String value, {bool bold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+                ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+                  color: color,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDocuments() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+
+      if (result != null && mounted) {
+        setState(() => _documents = result.files);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error selecting files: $e')),
+        );
+      }
+    }
+  }
+
+  void _showMaxLoanInfo(double maxAmount) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Loan Limit Information'),
+        content: Text(
+          'Your maximum loan amount is calculated as 3 times your current savings balance.\n\n'
+          'Current Savings: ${_formatCurrency(widget.memberSavings)}\n'
+          'Maximum Loan: ${_formatCurrency(maxAmount)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
 
 
          
