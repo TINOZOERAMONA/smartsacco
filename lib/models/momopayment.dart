@@ -114,6 +114,115 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
     });
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('MTN Mobile Money Payment'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Payment Amount Display
+              Text(
+                'Pay UGX ${widget.amount.toStringAsFixed(2)}',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+
+              // Phone Number Input
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'MTN Mobile Money Number',
+                  prefixText: '+256 ',
+                  border: OutlineInputBorder(),
+                  hintText: '775123456',
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your phone number';
+                  }
+                  final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+                  if (!RegExp(r'^(0|7)\d{8}$').hasMatch(cleaned)) {
+                    return 'Enter a valid Uganda number (e.g. 775123456)';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Error Message
+              if (_errorMessage != null)
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+              const Spacer(),
+
+              // Payment Button
+              ElevatedButton(
+                onPressed: _isLoading ? null : _processPayment,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  disabledBackgroundColor: Colors.grey[400],
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : const Text(
+                        'Pay with Mobile Money',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+              ),
+              const SizedBox(height: 16),
+
+              // Instruction Text
+              Text(
+                'You will receive a Mobile Money prompt on your phone to confirm the payment',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
 
