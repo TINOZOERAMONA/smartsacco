@@ -63,5 +63,66 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       });
     }
   }
+  Future<void> _initiateMomoPayment(BuildContext context) async {
+    final amountController = TextEditingController();
+    final phoneController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mobile Money Deposit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Amount (UGX)',
+                prefixText: 'UGX ',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Please enter amount';
+                final amount = double.tryParse(value) ?? 0;
+                if (amount <= 0) return 'Amount must be positive';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                hintText: '256XXXXXXXXX',
+              ),
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Please enter phone number';
+                if (!value.startsWith('256') || value.length != 12) {
+                  return 'Enter valid UG number (256XXXXXXXXX)';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (amountController.text.isEmpty || phoneController.text.isEmpty) {
+                return;
+              }
+              Navigator.pop(context, true);
+            },
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
+    );
+
 
 
