@@ -12,14 +12,16 @@ import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
 import 'package:smartsacco/pages/voicelogin.dart';
+import 'package:smartsacco/utils/logger.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  setupLogging(); // Initialize logging
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(SaccoDashboardApp());
+  runApp(const SaccoDashboardApp());
 }
 
 class SaccoDashboardApp extends StatelessWidget {
@@ -42,12 +44,7 @@ class SaccoDashboardApp extends StatelessWidget {
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
-        '/member-dashboard': (context) => const MemberDashboard(
-          userName: 'Member',
-          email: 'default@member.com',
-          currentSavings: 500000,
-          outstandingLoan: 120000,
-        ),
+        '/member-dashboard': (context) => const MemberDashboard(),
       },
       debugShowCheckedModeBanner: false,
     );

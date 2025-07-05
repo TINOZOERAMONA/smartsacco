@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:smartloan_sacco/services/momo_services.dart';
+import 'package:smartsacco/services/momoservices.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
+
+const String subscriptionKey = '45c1c5440807495b80c9db300112c631';
+const String apiUser = '3c3b115f-6d90-4a1a-9d7a-2c1a0422fdfc';
+const String apiKey = 'b7295fe722284bfcb65ecd97db695533';
+const bool isSandbox = true;
+const String callbackUrl = '	https://webhook.site/93611f81-f8f2-465e-b186-749a9b36bc59'; // Set to false for production
 
 
 class MomoPaymentPage extends StatefulWidget {
@@ -34,7 +41,8 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
       _phoneController.text = '775123456'; // Test UG number for sandbox
     }
   }
-   @override
+
+  @override
   void dispose() {
     _phoneController.dispose();
     _pollingTimer?.cancel();
@@ -51,19 +59,26 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
 
     try {
       final transactionId = MomoService.generateTransactionId();
-      
+
       // Clear previous callback data
       await _clearCallbackFile();
 
-      final momoService = MomoService(); // Configured with your credentials
-      
+      final momoService = MomoService(
+        subscriptionKey: subscriptionKey,
+        apiUser: apiUser,
+        apiKey: apiKey,
+        isSandbox: isSandbox,
+        callbackUrl: callbackUrl,
+      ); // Configured with your credentials
+
       await momoService.requestPayment(
         phoneNumber: _phoneController.text,
         amount: widget.amount,
         externalId: transactionId,
-        payerMessage: 'SACCO Contribution: UGX ${widget.amount.toStringAsFixed(2)}',
+        payerMessage:
+            'SACCO Contribution: UGX ${widget.amount.toStringAsFixed(2)}',
       );
-        // Start polling for payment confirmation
+      // Start polling for payment confirmation
       _startPolling(transactionId);
     } catch (e) {
       setState(() {
@@ -88,17 +103,17 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
   void _startPolling(String transactionId) {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
       final file = await _getCallbackFile();
-      
+
       if (await file.exists()) {
         final data = jsonDecode(await file.readAsString());
-        
+
         if (data['transactionId'] == transactionId) {
           timer.cancel();
-          
+
           if (mounted) {
             setState(() => _isLoading = false);
             widget.onPaymentComplete(data['status'] == 'SUCCESSFUL');
-            
+
             Navigator.pushNamed(
               context,
               '/payment-confirmation',
@@ -210,9 +225,9 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
               // Instruction Text
               Text(
                 'You will receive a Mobile Money prompt on your phone to confirm the payment',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -222,7 +237,3 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
     );
   }
 }
-
-
-
-

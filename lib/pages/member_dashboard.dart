@@ -5,13 +5,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:smartloan_sacco/pages/loan.dart';
-import 'package:smartloan_sacco/models/notification_model.dart';
-import 'package:smartloan_sacco/models/transaction_model.dart';
-import 'package:smartloan_sacco/pages/feedback_page.dart';
-import 'package:smartloan_sacco/pages/loan_application.dart';
-import 'package:smartloan_sacco/models/momo_payment.dart';
-import 'package:smartloan_sacco/pages/login.dart';
+import 'package:smartsacco/pages/loan.dart';
+import 'package:smartsacco/models/notification.dart';
+import 'package:smartsacco/models/transactionmodel.dart';
+import 'package:smartsacco/pages/feedback.dart';
+import 'package:smartsacco/pages/loanapplication.dart';
+import 'package:smartsacco/models/momopayment.dart';
+import 'package:smartsacco/pages/login.dart';
 
 class MemberDashboard extends StatefulWidget {
   const MemberDashboard({super.key});

@@ -44,13 +44,6 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     _startWelcomeSequence();
   }
 
-  void _initLogger() {
-    Logger.root.level = Level.ALL;
-    Logger.root.onRecord.listen((record) {
-      // In production, you might want to use a more sophisticated logging backend
-      print('${record.level.name}: ${record.time}: ${record.message}');
-    });
-  }
 
 
   void _initAnimations() {
@@ -157,7 +150,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       },
     );
 
-    print("Speech available: $available");
+    _logger.info("Speech available: $available");
     if (available) {
       if (mounted) {
         setState(() {

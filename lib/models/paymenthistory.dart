@@ -1,5 +1,9 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import 'package:smartloan_sacco/models/deposit_model.dart';
+import 'package:smartsacco/models/depositmodel.dart';
+
+
 
 class PaymentHistoryPage extends StatefulWidget {
   const PaymentHistoryPage({super.key});

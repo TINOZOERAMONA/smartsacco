@@ -37,7 +37,7 @@ dependencies:
   syncfusion_flutter_datepicker: ^29.2.11
   intl: ^0.18.1
   table_calendar: ^3.0.9
-  logging: ^1.2.0
+  logging: ^1.1.0
   shared_preferences: ^2.2.0
   speech_to_text: any
   flutter_tts: ^3.7.0
@@ -46,6 +46,10 @@ dependencies:
   cloud_firestore: 5.6.9
   firebase_core: ^3.15.0
   firebase_storage: 12.4.8
+  path_provider: ^2.1.5
+  universal_html: 2.2.3
+  http: 1.4.0
+  file_picker: ^10.2.0
 
 
 
