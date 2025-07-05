@@ -193,6 +193,37 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
                     onDeleted: () => setState(() => _documents.remove(file)),
                   )).toList(),
                 ),
+                ],
+              const SizedBox(height: 30),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitApplication,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const CircularProgressIndicator()
+                      : Text(
+                          'SUBMIT APPLICATION',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
 
          
