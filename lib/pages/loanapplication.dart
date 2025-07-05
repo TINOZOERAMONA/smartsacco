@@ -329,6 +329,48 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
     );
   }
 
+    Future<void> _submitApplication() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final application = {
+        'memberId': widget.memberId,
+        'amount': double.parse(_amountController.text),
+        'type': _loanType,
+        'purpose': _purposeController.text,
+        'repaymentPeriod': _repaymentPeriod,
+        'documents': _documents.map((f) => f.name).toList(),
+        'applicationDate': DateTime.now().toIso8601String(),
+      };
+
+      widget.onSubmit(application);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Application submitted successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0).format(amount);
+  }
+}
+
 
 
          
