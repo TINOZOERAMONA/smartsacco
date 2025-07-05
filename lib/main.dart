@@ -6,7 +6,8 @@ import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/member_dashboard.dart';
 import 'package:smartsacco/pages/register.dart';
 import 'package:smartsacco/pages/splash_page.dart';
-import 'package:smartsacco/pages/verification_page.dart';
+// ignore: unused_import
+import 'package:smartsacco/pages/emailverification_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
@@ -39,7 +40,8 @@ class SaccoDashboardApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/forgotpassword': (context) => ResetPin(),
         '/register': (context) => const RegisterPage(),
-        '/verification': (context) => const VerificationPage(),
+        // Remove this line since EmailVerificationScreen needs parameters
+        // '/verification': (context) => const EmailVerificationScreen(),
         '/dashboard': (context) => const DashboardPage(),
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
