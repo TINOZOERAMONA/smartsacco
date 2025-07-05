@@ -63,6 +63,57 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
         externalId: transactionId,
         payerMessage: 'SACCO Contribution: UGX ${widget.amount.toStringAsFixed(2)}',
       );
+        // Start polling for payment confirmation
+      _startPolling(transactionId);
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _clearCallbackFile() async {
+    final file = await _getCallbackFile();
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
+  Future<File> _getCallbackFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/momo_callback.json');
+  }
+
+  void _startPolling(String transactionId) {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      final file = await _getCallbackFile();
+      
+      if (await file.exists()) {
+        final data = jsonDecode(await file.readAsString());
+        
+        if (data['transactionId'] == transactionId) {
+          timer.cancel();
+          
+          if (mounted) {
+            setState(() => _isLoading = false);
+            widget.onPaymentComplete(data['status'] == 'SUCCESSFUL');
+            
+            Navigator.pushNamed(
+              context,
+              '/payment-confirmation',
+              arguments: {
+                'success': data['status'] == 'SUCCESSFUL',
+                'amount': widget.amount,
+                'transactionId': transactionId,
+              },
+            );
+          }
+        }
+      }
+    });
+  }
+
 
 
 
