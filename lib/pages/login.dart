@@ -121,8 +121,6 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userRole = ModalRoute.of(context)?.settings.arguments as String?;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

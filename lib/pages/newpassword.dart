@@ -1,15 +1,17 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 
 
+// ignore: use_key_in_widget_constructors
 class NewPasswordPage extends StatefulWidget {
   @override
   _NewPasswordPageState createState() => _NewPasswordPageState();
 }
 
 class _NewPasswordPageState extends State<NewPasswordPage>{
-  bool _obscurePassword = true;
+  final bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _rememberMe = false;
 
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -61,26 +63,22 @@ class _NewPasswordPageState extends State<NewPasswordPage>{
                   ),
                   SizedBox(height: 40),
                   TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
+                    controller: _confirmPasswordController,
+                    obscureText: _obscureConfirmPassword,
                     decoration: InputDecoration(
                         labelText: "Confirm Password",
                         border: OutlineInputBorder(),
                         suffixIcon: IconButton(
-                          onPressed: (){
+                          onPressed: () {
                             setState(() {
                               _obscureConfirmPassword = !_obscureConfirmPassword;
                             });
                           },
                           icon: Icon(
-                            _obscureConfirmPassword? Icons.visibility_off: Icons.visibility,
+                            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
                           ),
-
                         )
                     ),
-
-
-
                   ),
 
 

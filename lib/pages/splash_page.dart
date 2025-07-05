@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:logging/logging.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -27,6 +28,7 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _pulseAnimation;
+  final Logger _logger = Logger('SplashPage');
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _SplashPageState extends State<SplashPage>
     _requestPermissions();
     _startWelcomeSequence();
   }
+
 
   void _initAnimations() {
     _fadeController = AnimationController(
@@ -121,7 +124,7 @@ class _SplashPageState extends State<SplashPage>
 
     bool available = await speech.initialize(
       onStatus: (val) {
-        print('Speech status: $val'); // Debug log
+        _logger.info('Speech status: $val'); // Debug log
         if (mounted) {
           setState(() {
             isListening = val == 'listening';
@@ -134,7 +137,7 @@ class _SplashPageState extends State<SplashPage>
         }
       },
       onError: (val) {
-        print('Speech error: $val'); // Debug log
+        _logger.warning('Speech error: $val'); // Debug log
         if (mounted) {
           setState(() {
             isListening = false;
@@ -162,7 +165,7 @@ class _SplashPageState extends State<SplashPage>
               spokenText = val.recognizedWords.toLowerCase();
             });
 
-            print('Recognized: $spokenText'); // Debug log
+            _logger.info('Recognized: $spokenText'); // Debug log
 
             // Check for trigger words
             if (spokenText.contains('one') || 
@@ -209,7 +212,7 @@ class _SplashPageState extends State<SplashPage>
   void _handleSpeechError(String errorMsg) {
     _pulseController.stop();
     
-    print('Speech error details: $errorMsg'); // Debug log
+    _logger.warning('Speech error details: $errorMsg'); // Debug log
     
     // Handle specific error types
     if (errorMsg.contains('network') || errorMsg.contains('connection')) {
