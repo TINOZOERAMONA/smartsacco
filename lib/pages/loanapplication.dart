@@ -167,6 +167,32 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
 
               _buildRepaymentPreview(),
               const SizedBox(height: 30),
+              Text(
+                'Supporting Documents',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Upload any supporting documents (ID, payslips, business docs)',
+                style: theme.textTheme.bodySmall,
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                onPressed: _pickDocuments,
+                child: const Text('Select Files'),
+              ),
+              if (_documents.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  children: _documents.map((file) => Chip(
+                    label: Text(file.name),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onDeleted: () => setState(() => _documents.remove(file)),
+                  )).toList(),
+                ),
 
 
          
