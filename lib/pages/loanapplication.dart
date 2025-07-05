@@ -135,5 +135,17 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              TextFormField(
+                controller: _purposeController,
+                decoration: const InputDecoration(
+                  labelText: 'Purpose of Loan',
+                  hintText: 'Briefly describe what you need the loan for',
+                ),
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Please enter purpose';
+                  if (value.length < 10) return 'Please provide more details';
+                  return null;
+                },
 
          
