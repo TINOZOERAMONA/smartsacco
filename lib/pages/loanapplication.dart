@@ -35,3 +35,105 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
     _purposeController.dispose();
     super.dispose();
   }
+   @override
+  Widget build(BuildContext context) {
+    final maxLoanAmount = widget.memberSavings * 3;
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Loan Application'),
+        backgroundColor: Colors.blue,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'New Loan Application',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              Card(
+                color: Colors.blue[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.verified_user, color: Colors.blue[700]),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Loan Eligibility',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Based on your savings of ${_formatCurrency(widget.memberSavings)}, '
+                        'you qualify for a maximum loan of ${_formatCurrency(maxLoanAmount)}',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Interest Rate: $_interestRate% per annum',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              TextFormField(
+                controller: _amountController,
+                decoration: InputDecoration(
+                  labelText: 'Loan Amount (UGX)',
+                  prefixText: 'UGX ',
+                  hintText: 'Enter amount between 50,000 and ${_formatCurrency(maxLoanAmount)}',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.info),
+                    onPressed: () => _showMaxLoanInfo(maxLoanAmount),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Please enter amount';
+                  final amount = double.tryParse(value) ?? 0;
+                  if (amount < 50000) return 'Minimum loan is UGX 50,000';
+                  if (amount > maxLoanAmount) return 'Amount exceeds your limit';
+                  return null;
+                },
+                onChanged: (value) => setState(() {}),
+              ),
+              const SizedBox(height: 20),
+
+              DropdownButtonFormField<String>(
+                value: _loanType,
+                items: const [
+                  DropdownMenuItem(value: 'Personal', child: Text('Personal Loan')),
+                  DropdownMenuItem(value: 'Business', child: Text('Business Loan')),
+                  DropdownMenuItem(value: 'Emergency', child: Text('Emergency Loan')),
+                  DropdownMenuItem(value: 'Education', child: Text('Education Loan')),
+                ],
+                onChanged: (value) => setState(() => _loanType = value!),
+                decoration: const InputDecoration(
+                  labelText: 'Loan Type',
+                ),
+              ),
+              const SizedBox(height: 20),
+
+         
