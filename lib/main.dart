@@ -38,7 +38,7 @@ class SaccoDashboardApp extends StatelessWidget {
         '/forgotpassword': (context) => ResetPin(),
         '/register': (context) => const RegisterPage(),
         '/verification': (context) => const VerificationPage(),
-        '/dashboard': (context) => const DashboardPage(),
+        '/dashboard': (context) => const AdminMainPage(),
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
