@@ -116,15 +116,8 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
-<<<<<<< Updated upstream
         '/member-dashboard': (context) => const MemberDashboard(),
-=======
-        '/member-dashboard': (context) => const MemberDashboard(
-          userName: 'Member',
-          email: 'default@member.com',
-          currentSavings: 500000,
-          outstandingLoan: 120000,
-        ),
+
       },
       // Handle routes that need parameters
       onGenerateRoute: (settings) {
@@ -154,7 +147,6 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
           default:
             return null;
         }
->>>>>>> Stashed changes
       },
       debugShowCheckedModeBanner: false,
     );
