@@ -57,7 +57,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         _handleIncomingLink(uri.toString());
       },
       onError: (err) {
-        print('Deep link error: $err');
+        debugPrint('Deep link error: $err');
       },
     );
   }
@@ -95,7 +95,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         }
       }
     } catch (e) {
-      print('Error handling deep link: $e');
+      debugPrint('Error handling deep link: $e');
     }
   }
 

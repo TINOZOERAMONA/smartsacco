@@ -1,13 +1,16 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // First page - Enter email to request reset
 class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
   @override
-  _ForgotPasswordPageState createState() => _ForgotPasswordPageState();
+  ForgotPasswordPageState createState() => ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+class ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -28,13 +31,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      await _auth.sendPasswordResetEmail(
-        email: _emailController.text.trim(),
-      );
+      await _auth.sendPasswordResetEmail(email: _emailController.text.trim());
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Password reset email sent! Check your inbox and click the link.'),
+          content: Text(
+            'Password reset email sent! Check your inbox and click the link.',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -58,10 +61,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,27 +91,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             children: [
               SizedBox(height: 60),
-              Icon(
-                Icons.lock_reset,
-                size: 100,
-                color: Colors.blue,
-              ),
+              Icon(Icons.lock_reset, size: 100, color: Colors.blue),
               SizedBox(height: 30),
               Text(
                 'Forgot Your Password?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
                 'Enter your email address and we\'ll send you a link to reset your password.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               SizedBox(height: 30),
               TextFormField(
@@ -126,7 +116,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email address';
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
                     return 'Please enter a valid email address';
                   }
                   return null;
@@ -138,16 +130,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _sendPasswordResetEmail,
-                  child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                    'Send Reset Email',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                   ),
+                    child: _isLoading
+                      ?const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Send Reset Email',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
               ),
               SizedBox(height: 20),
@@ -167,13 +160,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 class CustomPasswordResetPage extends StatefulWidget {
   final String resetCode;
 
-  CustomPasswordResetPage({required this.resetCode});
+ 
+  const CustomPasswordResetPage({super.key, required this.resetCode});
 
   @override
-  _CustomPasswordResetPageState createState() => _CustomPasswordResetPageState();
+  CustomPasswordResetPageState createState() =>
+      CustomPasswordResetPageState();
 }
 
-class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
+class CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -207,7 +202,9 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Password reset successful! You can now login with your new password.'),
+          content: Text(
+            'Password reset successful! You can now login with your new password.',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -234,10 +231,7 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -267,27 +261,17 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
           child: Column(
             children: [
               SizedBox(height: 60),
-              Icon(
-                Icons.lock_outline,
-                size: 100,
-                color: Colors.blue,
-              ),
+              Icon(Icons.lock_outline, size: 100, color: Colors.blue),
               SizedBox(height: 30),
               Text(
                 'Set New Password',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
                 'Please enter your new password and confirm it.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               SizedBox(height: 30),
               TextFormField(
@@ -298,7 +282,9 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
                   prefixIcon: Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -327,7 +313,9 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
                   prefixIcon: Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                      _obscureConfirmPassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -353,16 +341,14 @@ class _CustomPasswordResetPageState extends State<CustomPasswordResetPage> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _resetPassword,
-                  child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                    'Reset Password',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                   ),
+                  child: _isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text('Reset Password', style: TextStyle(fontSize: 18)),
                 ),
               ),
             ],
