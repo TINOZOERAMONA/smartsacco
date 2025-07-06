@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:smartsacco/services/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:smartsacco/pages/emailverification_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -24,8 +24,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   bool _isRegistering = false;
   bool _isPasswordObscured = true;
 
-  // ignore: unused_field
-  final FirebaseAuthService _authService = FirebaseAuthService();
+ 
 
   @override
   void dispose() {
@@ -35,7 +34,6 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // Updated registration method based on the new code you provided
   Future<void> _register() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       if (mounted) {
@@ -49,38 +47,44 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
     }
 
     try {
-      // Show loading indicator
       setState(() => _isRegistering = true);
 
-      // Create user with email and password
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Update display name with full name
       if (userCredential.user != null) {
-        await userCredential.user!.updateDisplayName(_fullNameController.text.trim());
+        final user = userCredential.user!;
+        await user.updateDisplayName(_fullNameController.text.trim());
+
+        // ✅ Save user data to Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': _fullNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'pin': _passwordController.text.trim(),
+          'role': _selectedRole.toLowerCase(),
+          'registrationMethod': 'form',
+          'createdAt': Timestamp.now(),
+        });
+
+        _log.info(
+          'Successfully registered User: ${_fullNameController.text.trim()} as $_selectedRole with UID: ${user.uid}',
+        );
       }
 
-      _log.info('Successfully registered User: ${_fullNameController.text.trim()} as $_selectedRole with UID: ${userCredential.user?.uid}');
-
-      // IMPORTANT: Navigate to verification screen instead of going back
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => EmailVerificationScreen(
               userEmail: _emailController.text.trim(),
-              // You can also pass additional data if needed
-              // role: _selectedRole,
-              // fullName: _fullNameController.text.trim(),
             ),
           ),
         );
       }
-
     } on FirebaseAuthException catch (e) {
       String errorMessage;
       switch (e.code) {
@@ -144,35 +148,35 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                  keyboardType: TextInputType.text,
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Pin Password',
-                    border: const OutlineInputBorder(),
-                    helperText: 'Password must be at least 6 digits',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordObscured
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordObscured = !_isPasswordObscured;
-                        });
-                      },
+                keyboardType: TextInputType.text,
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Pin Password',
+                  border: const OutlineInputBorder(),
+                  helperText: 'Password must be at least 6 digits',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordObscured
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordObscured = !_isPasswordObscured;
+                      });
+                    },
                   ),
-                  obscureText: _isPasswordObscured,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a pin password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
+                ),
+                obscureText: _isPasswordObscured,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a pin password';
                   }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -200,7 +204,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007C91),
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -211,13 +215,13 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                       : "Register SACCO",
                   child: _isRegistering
                       ? const CircularProgressIndicator(
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
                       : const Text(
-                    "Register SACCO",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+                          "Register SACCO",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                 ),
               ),
             ],
@@ -241,7 +245,6 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
         if (value == null || value.isEmpty) {
           return 'Please enter $label';
         }
-        // Add email validation
         if (label == 'Email') {
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
             return 'Please enter a valid email address';
