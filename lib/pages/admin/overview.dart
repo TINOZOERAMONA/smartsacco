@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:csv/csv.dart';
@@ -8,15 +10,14 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-
 class OverviewPage extends StatefulWidget {
-  const OverviewPage({Key? key}) : super(key: key);
+  const OverviewPage({super.key});
 
   @override
-  _OverviewPageState createState() => _OverviewPageState();
+  OverviewPageState createState() => OverviewPageState();
 }
 
-class _OverviewPageState extends State<OverviewPage> {
+class OverviewPageState extends State<OverviewPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Map<String, dynamic>> _transactions = [];
@@ -89,28 +90,31 @@ class _OverviewPageState extends State<OverviewPage> {
 
     List<List<dynamic>> rows = [
       ['Description', 'Date', 'Amount', 'Type'],
-      ..._filteredTransactions.map((tx) => [
-            tx['description'],
-            (tx['date'] as Timestamp).toDate().toIso8601String(),
-            tx['amount'].toStringAsFixed(2),
-            tx['type'],
-          ]),
+      ..._filteredTransactions.map(
+        (tx) => [
+          tx['description'],
+          (tx['date'] as Timestamp).toDate().toIso8601String(),
+          tx['amount'].toStringAsFixed(2),
+          tx['type'],
+        ],
+      ),
     ];
 
     String csvData = const ListToCsvConverter().convert(rows);
 
     try {
       final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/transactions_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final path =
+          '${directory.path}/transactions_${DateTime.now().millisecondsSinceEpoch}.csv';
       final file = File(path);
       await file.writeAsString(csvData);
 
       await Share.shareXFiles([XFile(path)], text: 'Exported Transactions CSV');
     } catch (e) {
       if (kDebugMode) print('Error exporting CSV: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error exporting CSV: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error exporting CSV: $e')));
     }
   }
 
@@ -120,7 +124,11 @@ class _OverviewPageState extends State<OverviewPage> {
         Navigator.pushNamed(context, '/members');
         break;
       case 'active_loans':
-        Navigator.pushNamed(context, '/loans', arguments: {'status': 'approved'});
+        Navigator.pushNamed(
+          context,
+          '/loans',
+          arguments: {'status': 'approved'},
+        );
         break;
       case 'loan_approval':
         Navigator.pushNamed(context, '/loan_approval');
@@ -133,7 +141,8 @@ class _OverviewPageState extends State<OverviewPage> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+    final isPortrait =
+        MediaQuery.of(context).orientation == Orientation.portrait;
 
     int gridCount;
     if (screenWidth > 1200) {
@@ -165,7 +174,9 @@ class _OverviewPageState extends State<OverviewPage> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final chartHeight = constraints.maxWidth > 800 ? 280.0 : 220.0;
-              final transactionsHeight = constraints.maxWidth > 800 ? 320.0 : 260.0;
+              final transactionsHeight = constraints.maxWidth > 800
+                  ? 320.0
+                  : 260.0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,9 +255,13 @@ class _OverviewPageState extends State<OverviewPage> {
     return GestureDetector(
       onTap: onTap,
       child: MouseRegion(
-        cursor: onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: onTap != null
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 6,
           shadowColor: Colors.black26,
           color: cardColor,
@@ -307,7 +322,12 @@ class _OverviewPageState extends State<OverviewPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Loans Overview', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              'Loans Overview',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               height: height - 50,
@@ -325,7 +345,12 @@ class _OverviewPageState extends State<OverviewPage> {
 
                   final total = approved + pending + rejected;
                   if (total == 0) {
-                    return Center(child: Text('No loans data available', style: theme.textTheme.bodyLarge));
+                    return Center(
+                      child: Text(
+                        'No loans data available',
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                    );
                   }
 
                   return PieChart(
@@ -333,9 +358,21 @@ class _OverviewPageState extends State<OverviewPage> {
                       sectionsSpace: 2,
                       centerSpaceRadius: 40,
                       sections: [
-                        PieChartSectionData(value: approved.toDouble(), color: Colors.green, title: '$approved'),
-                        PieChartSectionData(value: pending.toDouble(), color: Colors.orange, title: '$pending'),
-                        PieChartSectionData(value: rejected.toDouble(), color: Colors.red, title: '$rejected'),
+                        PieChartSectionData(
+                          value: approved.toDouble(),
+                          color: Colors.green,
+                          title: '$approved',
+                        ),
+                        PieChartSectionData(
+                          value: pending.toDouble(),
+                          color: Colors.orange,
+                          title: '$pending',
+                        ),
+                        PieChartSectionData(
+                          value: rejected.toDouble(),
+                          color: Colors.red,
+                          title: '$rejected',
+                        ),
                       ],
                     ),
                   );
@@ -383,7 +420,10 @@ class _OverviewPageState extends State<OverviewPage> {
     final cardColor = isDark ? Colors.grey[800] : Colors.white;
 
     if (_isLoadingTransactions) {
-      return SizedBox(height: height, child: const Center(child: CircularProgressIndicator()));
+      return SizedBox(
+        height: height,
+        child: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_filteredTransactions.isEmpty) {
@@ -391,7 +431,9 @@ class _OverviewPageState extends State<OverviewPage> {
         height: height,
         child: Center(
           child: Text(
-            _searchQuery.isEmpty ? 'No transactions found' : 'No matching transactions',
+            _searchQuery.isEmpty
+                ? 'No transactions found'
+                : 'No matching transactions',
             style: theme.textTheme.bodyLarge,
           ),
         ),
@@ -438,17 +480,23 @@ class _OverviewPageState extends State<OverviewPage> {
   }
 
   Future<String> _getTotalMembersCount() async {
-    final snapshot = await _firestore.collection('members').get();
+    final snapshot = await _firestore.collection('users').get();
     return snapshot.size.toString();
   }
 
   Future<String> _getActiveLoansCount() async {
-    final snapshot = await _firestore.collection('loans').where('status', isEqualTo: 'approved').get();
+    final snapshot = await _firestore
+        .collection('loans')
+        .where('status', isEqualTo: 'approved')
+        .get();
     return snapshot.size.toString();
   }
 
   Future<String> _getPendingLoansCount() async {
-    final snapshot = await _firestore.collection('loans').where('status', isEqualTo: 'pending').get();
+    final snapshot = await _firestore
+        .collection('loans')
+        .where('status', isEqualTo: 'pending')
+        .get();
     return snapshot.size.toString();
   }
 
@@ -466,14 +514,14 @@ class _OverviewPageState extends State<OverviewPage> {
     int approved = 0, pending = 0, rejected = 0;
     for (var doc in snapshot.docs) {
       final status = (doc.data()['status'] ?? '').toString().toLowerCase();
-      if (status == 'approved') approved++;
-      else if (status == 'pending') pending++;
-      else if (status == 'rejected') rejected++;
+      if (status == 'approved') {
+        approved++;
+      } else if (status == 'pending') {
+        pending++;
+      } else if (status == 'rejected') {
+        rejected++;
+      }
     }
-    return {
-      'approved': approved,
-      'pending': pending,
-      'rejected': rejected,
-    };
+    return {'approved': approved, 'pending': pending, 'rejected': rejected};
   }
 }
