@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoansPage extends StatefulWidget {
+  const LoansPage({super.key});
+
   @override
-  _LoansPageState createState() => _LoansPageState();
+  LoansPageState createState() => LoansPageState();
 }
 
-class _LoansPageState extends State<LoansPage> {
+class LoansPageState extends State<LoansPage> {
   String selectedStatus = 'All';
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getLoanStream() {
@@ -41,8 +43,8 @@ class _LoansPageState extends State<LoansPage> {
               ),
               items: ['All', 'Approved', 'Pending', 'Rejected']
                   .map((status) => DropdownMenuItem(
-                        child: Text(status),
                         value: status,
+                        child: Text(status),
                       ))
                   .toList(),
               onChanged: (value) {
@@ -101,6 +103,7 @@ class _LoansPageState extends State<LoansPage> {
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 18),
                         onTap: () {
+                          
                           // TODO: Navigate to loan details page (pass document ID or data)
                           // Navigator.push(context, MaterialPageRoute(builder: (_) => LoanDetailsPage(loanId: loans[index].id)));
                         },

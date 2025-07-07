@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoanListStatusPage extends StatelessWidget {
-  const LoanListStatusPage({Key? key}) : super(key: key);
+  const LoanListStatusPage({super.key});
 
   Future<List<Map<String, dynamic>>> fetchMemberLoans() async {
     final currentUser = FirebaseAuth.instance.currentUser;

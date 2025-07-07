@@ -5,13 +5,14 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String subscriptionKey = '45c1c5440807495b80c9db300112c631';
 const String apiUser = '3c3b115f-6d90-4a1a-9d7a-2c1a0422fdfc';
 const String apiKey = 'b7295fe722284bfcb65ecd97db695533';
 const bool isSandbox = true;
-const String callbackUrl = '	https://webhook.site/93611f81-f8f2-465e-b186-749a9b36bc59'; // Set to false for production
-
+const String callbackUrl =
+    'https://2e76-41-210-141-242.ngrok-free.app/momo-callback';
 
 class MomoPaymentPage extends StatefulWidget {
   final double amount;
@@ -61,7 +62,11 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
       final transactionId = MomoService.generateTransactionId();
 
       // Clear previous callback data
-      await _clearCallbackFile();
+      if (kIsWeb) {
+        await _clearMomoCallback();
+      } else {
+        await _clearCallbackFile();
+      }
 
       final momoService = MomoService(
         subscriptionKey: subscriptionKey,
@@ -71,7 +76,7 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
         callbackUrl: callbackUrl,
       ); // Configured with your credentials
 
-      await momoService.requestPayment(
+      final payementData = await momoService.requestPayment(
         phoneNumber: _phoneController.text,
         amount: widget.amount,
         externalId: transactionId,
@@ -79,7 +84,12 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
             'SACCO Contribution: UGX ${widget.amount.toStringAsFixed(2)}',
       );
       // Start polling for payment confirmation
-      _startPolling(transactionId);
+      _startPolling(
+        payementData['referenceId'],
+        payementData['authorization'],
+        payementData['externalId'],
+        momoService,
+      );
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -98,34 +108,70 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
   Future<File> _getCallbackFile() async {
     final dir = await getApplicationDocumentsDirectory();
     return File('${dir.path}/momo_callback.json');
+    // return File('momo_callback.json');
   }
 
-  void _startPolling(String transactionId) {
+  // Future<void> _saveMomoCallback(Map<String, dynamic> data) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   prefs.setString('momo_callback', jsonEncode(data));
+  // }
+
+  Future<Map<String, dynamic>?> _loadMomoCallback() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString('momo_callback');
+    if (jsonString == null) return null;
+    return jsonDecode(jsonString);
+  }
+
+  Future<void> _clearMomoCallback() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('momo_callback');
+  }
+
+  void _startPolling(
+    String referenceId,
+    String authorization,
+    String externalId,
+    MomoService momoService,
+  ) {
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      final file = await _getCallbackFile();
+      // late File file;
+      // late Map<String, dynamic>? data;
+      // if (!kIsWeb) {
+      //   file = await _getCallbackFile();
+      // }
 
-      if (await file.exists()) {
-        final data = jsonDecode(await file.readAsString());
+      // if (kIsWeb || await file.exists()) {
+      // if (kIsWeb) {
+      //   // data = await _loadMomoCallback();
+      //   data = null;
+      // } else {
+      //   data = jsonDecode(await file.readAsString());
+      // }
+      final data = await momoService.transactionStatus(
+        referenceId: referenceId,
+        authorization: authorization,
+      );
 
-        if (data['transactionId'] == transactionId) {
-          timer.cancel();
+      if (data['externalId'] == externalId) {
+        timer.cancel();
 
-          if (mounted) {
-            setState(() => _isLoading = false);
-            widget.onPaymentComplete(data['status'] == 'SUCCESSFUL');
+        if (mounted) {
+          setState(() => _isLoading = false);
+          widget.onPaymentComplete(data['status'] == 'SUCCESSFUL');
 
-            Navigator.pushNamed(
-              context,
-              '/payment-confirmation',
-              arguments: {
-                'success': data['status'] == 'SUCCESSFUL',
-                'amount': widget.amount,
-                'transactionId': transactionId,
-              },
-            );
-          }
+          Navigator.pushNamed(
+            context,
+            '/payment-confirmation',
+            arguments: {
+              'success': data['status'] == 'SUCCESSFUL',
+              'amount': widget.amount,
+              'transactionId': referenceId,
+            },
+          );
         }
       }
+      // }
     });
   }
 

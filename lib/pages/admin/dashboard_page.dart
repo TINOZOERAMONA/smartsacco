@@ -7,13 +7,13 @@ import 'loans_page.dart';
 import 'loan_approval_page.dart';
 
 class AdminMainPage extends StatefulWidget {
-  const AdminMainPage({Key? key}) : super(key: key);
+  const AdminMainPage({super.key});
 
   @override
-  _AdminMainPageState createState() => _AdminMainPageState();
+  AdminMainPageState createState() => AdminMainPageState();
 }
 
-class _AdminMainPageState extends State<AdminMainPage> {
+class AdminMainPageState extends State<AdminMainPage> {
   int _selectedIndex = 0;
 
   final List<String> _pageTitles = [
