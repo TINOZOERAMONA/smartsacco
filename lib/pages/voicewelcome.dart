@@ -1,4 +1,4 @@
-// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use, avoid_print, duplicate_ignore
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -115,6 +115,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
   }
 
   Future<void> _startListening() async {
+    // ignore: avoid_print
     print("Initializing speech recognition...");
     
     // Stop any existing listening session
@@ -369,7 +370,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     });
   }
 
-  void _navigateToMainApp({bool accessibilityMode = true}) {
+  void _navigateToMainApp() {
     print("Navigating to main app - tap detected");
     speech.stop();
     flutterTts.stop();

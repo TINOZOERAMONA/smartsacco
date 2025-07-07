@@ -1,6 +1,9 @@
+// ignore_for_file: unused_field, prefer_final_fields, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 
 
+// ignore: use_key_in_widget_constructors
 class NewPasswordPage extends StatefulWidget {
   @override
   _NewPasswordPageState createState() => _NewPasswordPageState();

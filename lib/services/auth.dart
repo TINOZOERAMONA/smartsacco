@@ -1,6 +1,8 @@
 
 
 
+// ignore_for_file: prefer_final_fields, avoid_print, duplicate_ignore
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseAuthService{
@@ -11,6 +13,7 @@ class FirebaseAuthService{
       UserCredential credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       return credential.user;
     } catch(e){
+      // ignore: avoid_print
       print("Some error occured");
     }
     return null;
