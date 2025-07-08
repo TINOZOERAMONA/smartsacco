@@ -42,8 +42,8 @@ class _OverviewPageState extends State<OverviewPage> {
     });
     try {
       final snapshot = await _firestore
-          .collection('transactions')
-          .orderBy('date', descending: true)
+          .collection('momo_callbacks')
+          .orderBy('transactionId', descending: true,)
           .limit(50)
           .get();
 
@@ -89,12 +89,22 @@ class _OverviewPageState extends State<OverviewPage> {
 
     List<List<dynamic>> rows = [
       ['Description', 'Date', 'Amount', 'Type'],
-      ..._filteredTransactions.map((tx) => [
-            tx['description'],
-            (tx['date'] as Timestamp).toDate().toIso8601String(),
-            tx['amount'].toStringAsFixed(2),
-            tx['type'],
-          ]),
+      ..._filteredTransactions.map((tx) {
+        final date = tx['date'];
+        String formattedDate = '';
+        if (date is Timestamp) {
+          formattedDate = date.toDate().toIso8601String();
+        } else {
+          formattedDate = 'N/A';
+        }
+
+        return [
+          tx['description'],
+          formattedDate,
+          tx['amount'].toStringAsFixed(2),
+          tx['type'],
+        ];
+      }),
     ];
 
     String csvData = const ListToCsvConverter().convert(rows);
@@ -206,12 +216,13 @@ class _OverviewPageState extends State<OverviewPage> {
                         onTap: () => _navigateToPage('loan_approval'),
                       ),
                       _buildSummaryCard(
-                        title: 'Total Savings',
+                        title: 'Current Balance', // Changed title
                         icon: Icons.account_balance_wallet,
                         iconColor: Colors.teal.shade700,
-                        valueFuture: _getTotalSavings(),
+                        valueFuture: _getCurrentBalance(), // <-- THIS IS THE CHANGE
                         theme: theme,
                         isDark: isDark,
+                        onTap: () {},
                       ),
                     ],
                   ),
@@ -409,24 +420,52 @@ class _OverviewPageState extends State<OverviewPage> {
           itemCount: _filteredTransactions.length,
           itemBuilder: (context, index) {
             final tx = _filteredTransactions[index];
-            final date = (tx['date'] as Timestamp).toDate();
+            final dynamic dateValue = tx['date'];
+            DateTime date;
+
+            if (dateValue is Timestamp) {
+              date = dateValue.toDate();
+            } else {
+              date = DateTime.now();
+              debugPrint('Warning: Transaction ${tx['description']} has a null or invalid date. Using current time as fallback.');
+            }
+
             final amount = tx['amount'] as double;
-            final isCredit = (tx['type'] ?? '').toLowerCase() == 'credit';
+            final type = (tx['type'] ?? '').toLowerCase(); // Get the type and convert to lowercase
+
+            Color transactionColor;
+            IconData transactionIcon;
+            String sign;
+
+            if (type == 'deposit') { // Check for 'deposit' type
+              transactionColor = Colors.green;
+              transactionIcon = Icons.arrow_downward; // Incoming funds
+              sign = '+';
+            } else if (type == 'withdraw') { // Check for 'withdraw' type
+              transactionColor = Colors.red;
+              transactionIcon = Icons.arrow_upward; // Outgoing funds
+              sign = '-';
+            } else {
+              // Default for unknown or unhandled types
+              transactionColor = Colors.grey;
+              transactionIcon = Icons.info_outline;
+              sign = '';
+            }
 
             return ListTile(
               leading: CircleAvatar(
-                backgroundColor: isCredit ? Colors.green : Colors.red,
+                backgroundColor: transactionColor,
                 child: Icon(
-                  isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                  transactionIcon,
                   color: Colors.white,
                 ),
               ),
               title: Text(tx['description'] ?? ''),
               subtitle: Text(DateFormat.yMMMd().add_jm().format(date)),
               trailing: Text(
-                '${isCredit ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
+                '$sign UGX${amount.toStringAsFixed(2)}', // UGX currency and correct sign
                 style: TextStyle(
-                  color: isCredit ? Colors.green : Colors.red,
+                  color: transactionColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -437,8 +476,38 @@ class _OverviewPageState extends State<OverviewPage> {
     );
   }
 
+  // New function to calculate current balance - UPDATED FOR UGX AND 'deposit'/'withdraw'
+  Future<String> _getCurrentBalance() async {
+    try {
+      final snapshot = await _firestore.collection('momo_callbacks').get(); // Assuming all transactions are here
+
+      double totalDeposits = 0;
+      double totalWithdrawals = 0;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final amount = (data['amount'] ?? 0).toDouble();
+        final type = (data['type'] ?? '').toLowerCase(); // Ensure consistent lowercasing
+
+        if (type == 'deposit') { // <-- CHANGED from 'credit' to 'deposit'
+          totalDeposits += amount;
+        } else if (type == 'withdraw') { // <-- CHANGED from 'debit' to 'withdraw'
+          totalWithdrawals += amount;
+        }
+      }
+
+      double currentBalance = totalDeposits - totalWithdrawals;
+
+      // Format the balance for display with UGX
+      return 'UGX${currentBalance.toStringAsFixed(2)}'; // <-- CHANGED currency symbol
+    } catch (e) {
+      debugPrint('Error calculating current balance: $e');
+      return 'Error'; // Return an error string
+    }
+  }
+
   Future<String> _getTotalMembersCount() async {
-    final snapshot = await _firestore.collection('members').get();
+    final snapshot = await _firestore.collection('users').get();
     return snapshot.size.toString();
   }
 
@@ -452,13 +521,16 @@ class _OverviewPageState extends State<OverviewPage> {
     return snapshot.size.toString();
   }
 
+
+  // This function is now redundant if you use _getCurrentBalance for the main balance card
+  // You can keep it if you need 'Total Savings' as a separate metric (e.g., initial contributions only)
   Future<String> _getTotalSavings() async {
     final snapshot = await _firestore.collection('savings').get();
     double total = 0;
     for (var doc in snapshot.docs) {
       total += (doc.data()['amount'] ?? 0).toDouble();
     }
-    return '\$${total.toStringAsFixed(2)}';
+    return 'UGX${total.toStringAsFixed(2)}'; // Changed to UGX for consistency
   }
 
   Future<Map<String, int>> _getLoanStats() async {
