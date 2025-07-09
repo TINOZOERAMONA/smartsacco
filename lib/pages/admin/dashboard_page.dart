@@ -1,42 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// ✅ Only importing the 3 required pages
+// Import your pages
 import 'overview.dart';
 import 'loans_page.dart';
-import 'loan_approval_page.dart';
 
 class AdminMainPage extends StatefulWidget {
-  const AdminMainPage({Key? key}) : super(key: key);
+  const AdminMainPage({super.key});
 
   @override
-  _AdminMainPageState createState() => _AdminMainPageState();
+  AdminMainPageState createState() => AdminMainPageState();
 }
 
-class _AdminMainPageState extends State<AdminMainPage> {
+class AdminMainPageState extends State<AdminMainPage> {
   int _selectedIndex = 0;
 
   final List<String> _pageTitles = [
     'Overview',
     'Loan Applications',
-    'Loan Approval',
   ];
-
-  // Dummy data for demonstration — replace with actual data if needed
-  final String loanId = 'defaultLoanId';
-  final Map<String, dynamic>? loanData = null;
 
   Widget _getPage(int index) {
     switch (index) {
       case 0:
         return const OverviewPage();
       case 1:
-        return LoansPage();
-      case 2:
-        return LoanApprovalPage(
-          loanId: loanId,
-          loanData: loanData ?? {},
-        );
+        return const LoanPage();  // Your loan list page
       default:
         return const Center(child: Text('Page not found'));
     }
@@ -45,7 +34,7 @@ class _AdminMainPageState extends State<AdminMainPage> {
   void _onSelectPage(int index) {
     setState(() {
       _selectedIndex = index;
-      Navigator.pop(context);
+      Navigator.pop(context);  // Close the drawer after selection
     });
   }
 
@@ -109,7 +98,6 @@ class _AdminMainPageState extends State<AdminMainPage> {
             ),
             _buildDrawerItem(0, Icons.dashboard),
             _buildDrawerItem(1, Icons.credit_card),
-            _buildDrawerItem(2, Icons.check_circle),
           ],
         ),
       ),

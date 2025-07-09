@@ -13,6 +13,8 @@ import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
 import 'package:smartsacco/pages/voicelogin.dart';
 import 'package:smartsacco/pages/admin/dashboard_page.dart';
+import 'package:smartsacco/pages/admin/member_page.dart';
+import 'package:smartsacco/pages/admin/membersDetails.dart';
 
 
 import 'package:smartsacco/utils/logger.dart';
@@ -119,6 +121,8 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/voiceLogin': (context) => const VoiceLoginPage(),
         '/member-dashboard': (context) => const MemberDashboard(),
         '/admin-dashboard': (context) => const AdminMainPage(),
+        '/members': (context) => const MembersPage(),
+        '/member_details': (context) => const MemberDetailsPage(),
 
       },
       // Handle routes that need parameters

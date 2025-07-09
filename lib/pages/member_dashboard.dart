@@ -1,5 +1,3 @@
-
-
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
@@ -13,7 +11,6 @@ import 'package:smartsacco/pages/loanapplication.dart';
 import 'package:smartsacco/models/momopayment.dart';
 import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/feedback.dart';
-
 
 class MemberDashboard extends StatefulWidget {
   const MemberDashboard({super.key});
@@ -42,7 +39,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
   List<AppNotification> _notifications = [];
   List<SavingsHistory> _savingsHistory = [];
   final List<Transaction> _transactions = [];
- 
+
   @override
   void initState() {
     super.initState();
@@ -53,14 +50,14 @@ class _MemberDashboardState extends State<MemberDashboard> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       memberId = user.uid;
-      
+
       final memberDoc = await FirebaseFirestore.instance
-          .collection('members')
+          .collection('users')
           .doc(memberId)
           .get();
-      
+
       setState(() {
-        memberName = memberDoc['name'] ?? 'Member';
+        memberName = memberDoc['fullName'] ?? 'Member';
         memberEmail = memberDoc['email'] ?? 'member@sacco.com';
       });
 
@@ -72,7 +69,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Future<void> _fetchSavingsData() async {
     final savingsSnapshot = await FirebaseFirestore.instance
-        .collection('members')
+        .collection('users')
         .doc(memberId)
         .collection('savings')
         .orderBy('date', descending: true)
@@ -84,12 +81,14 @@ class _MemberDashboardState extends State<MemberDashboard> {
     for (var doc in savingsSnapshot.docs) {
       final amount = doc['amount']?.toDouble() ?? 0;
       totalSavings += amount;
-      history.add(SavingsHistory(
-        amount: amount,
-        date: doc['date'].toDate(),
-        type: doc['type'] ?? 'Deposit',
-        transactionId: doc.id,
-      ));
+      history.add(
+        SavingsHistory(
+          amount: amount,
+          date: doc['date'].toDate(),
+          type: doc['type'] ?? 'Deposit',
+          transactionId: doc.id,
+        ),
+      );
     }
 
     setState(() {
@@ -100,40 +99,46 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Future<void> _fetchLoansData() async {
     final loansSnapshot = await FirebaseFirestore.instance
-        .collection('members')
+        .collection('users')
         .doc(memberId)
         .collection('loans')
         .where('status', whereIn: ['Active', 'Overdue', 'Pending'])
         .get();
 
     List<Loan> loans = [];
-    
+
     for (var doc in loansSnapshot.docs) {
       final payments = await FirebaseFirestore.instance
-          .collection('members')
+          .collection('users')
           .doc(memberId)
           .collection('loans')
           .doc(doc.id)
           .collection('payments')
           .get();
 
-      loans.add(Loan(
-        id: doc.id,
-        amount: doc['amount']?.toDouble() ?? 0,
-        remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
-        disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
-        dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
-        status: doc['status'] ?? 'Pending',
-        type: doc['type'] ?? 'Personal',
-        interestRate: doc['interestRate']?.toDouble() ?? 12.0,
-        totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
-        repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
-        payments: payments.docs.map((p) => Payment(
-          amount: p['amount']?.toDouble() ?? 0,
-          date: p['date']?.toDate() ?? DateTime.now(),
-          reference: p['reference'] ?? '',
-        )).toList(),
-      ));
+      loans.add(
+        Loan(
+          id: doc.id,
+          amount: doc['amount']?.toDouble() ?? 0,
+          remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
+          disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
+          dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
+          status: doc['status'] ?? 'Pending',
+          type: doc['type'] ?? 'Personal',
+          interestRate: doc['interestRate']?.toDouble() ?? 12.0,
+          totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
+          repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
+          payments: payments.docs
+              .map(
+                (p) => Payment(
+                  amount: p['amount']?.toDouble() ?? 0,
+                  date: p['date']?.toDate() ?? DateTime.now(),
+                  reference: p['reference'] ?? '',
+                ),
+              )
+              .toList(),
+        ),
+      );
     }
 
     setState(() {
@@ -143,7 +148,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Future<void> _fetchNotifications() async {
     final notificationsSnapshot = await FirebaseFirestore.instance
-        .collection('members')
+        .collection('users')
         .doc(memberId)
         .collection('notifications')
         .orderBy('date', descending: true)
@@ -152,20 +157,22 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
     int unread = 0;
     List<AppNotification> notifications = [];
-    
+
     for (var doc in notificationsSnapshot.docs) {
       final isRead = doc['isRead'] ?? false;
       if (!isRead) unread++;
-      
-      notifications.add(AppNotification(
-        id: doc.id,
-        title: doc['title'] ?? 'Notification',
-        message: doc['message'] ?? '',
-        date: doc['date']?.toDate() ?? DateTime.now(),
-        type: NotificationType.values[doc['type'] ?? 0],
-        isRead: isRead,
-        actionUrl: doc['actionUrl'],
-      ));
+
+      notifications.add(
+        AppNotification(
+          id: doc.id,
+          title: doc['title'] ?? 'Notification',
+          message: doc['message'] ?? '',
+          date: doc['date']?.toDate() ?? DateTime.now(),
+          type: NotificationType.values[doc['type'] ?? 0],
+          isRead: isRead,
+          actionUrl: doc['actionUrl'],
+        ),
+      );
     }
 
     setState(() {
@@ -195,44 +202,50 @@ class _MemberDashboardState extends State<MemberDashboard> {
               final amount = application['amount'];
               final interestRate = application['interestRate'];
               final repaymentPeriod = application['repaymentPeriod'];
-              final interest = (amount * interestRate / 100) * (repaymentPeriod / 12);
+              final interest =
+                  (amount * interestRate / 100) * (repaymentPeriod / 12);
               final totalRepayment = amount + interest;
-              final monthlyPayment = repaymentPeriod > 0 ? totalRepayment / repaymentPeriod : 0;
-              
+              final monthlyPayment = repaymentPeriod > 0
+                  ? totalRepayment / repaymentPeriod
+                  : 0;
+
               await FirebaseFirestore.instance
-                  .collection('members')
+                  .collection('users')
                   .doc(memberId)
                   .collection('loans')
                   .add({
-                'amount': amount,
-                'remainingBalance': totalRepayment,
-                'disbursementDate': DateTime.now(),
-                'dueDate': DateTime.now().add(Duration(days: repaymentPeriod * 30)),
-                'status': 'Pending Approval',
-                'type': application['type'] ?? 'Personal',
-                'interestRate': interestRate,
-                'totalRepayment': totalRepayment,
-                'monthlyPayment': monthlyPayment,
-                'purpose': application['purpose'],
-                'applicationDate': DateTime.now(),
-              });
+                    'amount': amount,
+                    'remainingBalance': totalRepayment,
+                    'disbursementDate': DateTime.now(),
+                    'dueDate': DateTime.now().add(
+                      Duration(days: repaymentPeriod * 30),
+                    ),
+                    'status': 'Pending Approval',
+                    'type': application['type'] ?? 'Personal',
+                    'interestRate': interestRate,
+                    'totalRepayment': totalRepayment,
+                    'monthlyPayment': monthlyPayment,
+                    'purpose': application['purpose'],
+                    'applicationDate': DateTime.now(),
+                  });
 
               await FirebaseFirestore.instance
-                  .collection('members')
+                  .collection('users')
                   .doc(memberId)
                   .collection('notifications')
                   .add({
-                'title': 'Loan Application Submitted',
-                'message': 'Your loan application of ${_formatCurrency(amount)} is under review',
-                'date': DateTime.now(),
-                'type': NotificationType.loan.index,
-                'isRead': false,
-              });
+                    'title': 'Loan Application Submitted',
+                    'message':
+                        'Your loan application of ${_formatCurrency(amount)} is under review',
+                    'date': DateTime.now(),
+                    'type': NotificationType.loan.index,
+                    'isRead': false,
+                  });
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Loan application submitted!')),
               );
-              
+
               _fetchLoansData();
               _fetchNotifications();
             } catch (e) {
@@ -257,52 +270,56 @@ class _MemberDashboardState extends State<MemberDashboard> {
               try {
                 final paymentAmount = loan.nextPaymentAmount;
                 final paymentRef = await FirebaseFirestore.instance
-                    .collection('members')
+                    .collection('users')
                     .doc(memberId)
                     .collection('loans')
                     .doc(loan.id)
                     .collection('payments')
                     .add({
-                  'amount': paymentAmount,
-                  'date': DateTime.now(),
-                  'reference': 'MOMO-${DateTime.now().millisecondsSinceEpoch}',
-                });
+                      'amount': paymentAmount,
+                      'date': DateTime.now(),
+                      'reference':
+                          'MOMO-${DateTime.now().millisecondsSinceEpoch}',
+                    });
 
                 await FirebaseFirestore.instance
-                    .collection('members')
+                    .collection('users')
                     .doc(memberId)
                     .collection('loans')
                     .doc(loan.id)
                     .update({
-                  'remainingBalance': loan.remainingBalance - paymentAmount,
-                  'nextPaymentDate': DateTime.now().add(const Duration(days: 30)),
-                });
+                      'remainingBalance': loan.remainingBalance - paymentAmount,
+                      'nextPaymentDate': DateTime.now().add(
+                        const Duration(days: 30),
+                      ),
+                    });
 
                 await FirebaseFirestore.instance
-                    .collection('members')
+                    .collection('users')
                     .doc(memberId)
                     .collection('transactions')
                     .add({
-                  'amount': paymentAmount,
-                  'date': DateTime.now(),
-                  'type': 'Loan Repayment',
-                  'status': 'Completed',
-                  'method': 'Mobile Money',
-                  'loanId': loan.id,
-                  'paymentId': paymentRef.id,
-                });
+                      'amount': paymentAmount,
+                      'date': DateTime.now(),
+                      'type': 'Loan Repayment',
+                      'status': 'Completed',
+                      'method': 'Mobile Money',
+                      'loanId': loan.id,
+                      'paymentId': paymentRef.id,
+                    });
 
                 await FirebaseFirestore.instance
-                    .collection('members')
+                    .collection('users')
                     .doc(memberId)
                     .collection('notifications')
                     .add({
-                  'title': 'Payment Received',
-                  'message': 'Your payment of ${_formatCurrency(paymentAmount)} for loan ${loan.id.substring(0, 8)} has been received',
-                  'date': DateTime.now(),
-                  'type': NotificationType.payment.index,
-                  'isRead': false,
-                });
+                      'title': 'Payment Received',
+                      'message':
+                          'Your payment of ${_formatCurrency(paymentAmount)} for loan ${loan.id.substring(0, 8)} has been received',
+                      'date': DateTime.now(),
+                      'type': NotificationType.payment.index,
+                      'isRead': false,
+                    });
 
                 _fetchLoansData();
                 _fetchNotifications();
@@ -324,16 +341,16 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   void _showNotifications() {
     setState(() => _currentIndex = 3);
-    
+
     for (var notification in _notifications.where((n) => !n.isRead)) {
       FirebaseFirestore.instance
-          .collection('members')
+          .collection('users')
           .doc(memberId)
           .collection('notifications')
           .doc(notification.id)
           .update({'isRead': true});
     }
-    
+
     _fetchNotifications();
   }
 
@@ -349,16 +366,24 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(symbol: 'UGX ', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      symbol: 'UGX ',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   String _getAppBarTitle() {
     switch (_currentIndex) {
-      case 0: return 'Dashboard';
-      case 1: return 'Savings';
-      case 2: return 'Transactions';
-      case 3: return 'Notifications';
-      default: return 'Dashboard';
+      case 0:
+        return 'Dashboard';
+      case 1:
+        return 'Savings';
+      case 2:
+        return 'Transactions';
+      case 3:
+        return 'Notifications';
+      default:
+        return 'Dashboard';
     }
   }
 
@@ -379,16 +404,10 @@ class _MemberDashboardState extends State<MemberDashboard> {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
-              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               child: Text(
                 '$_unreadNotifications',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 10),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -399,11 +418,16 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Widget _getCurrentScreen(int activeLoans, int overdueLoans, double totalDue) {
     switch (_currentIndex) {
-      case 0: return _buildHomeScreen(activeLoans, overdueLoans, totalDue);
-      case 1: return _buildSavingsScreen();
-      case 2: return _buildTransactionsScreen();
-      case 3: return _buildNotificationsScreen();
-      default: return _buildHomeScreen(activeLoans, overdueLoans, totalDue);
+      case 0:
+        return _buildHomeScreen(activeLoans, overdueLoans, totalDue);
+      case 1:
+        return _buildSavingsScreen();
+      case 2:
+        return _buildTransactionsScreen();
+      case 3:
+        return _buildNotificationsScreen();
+      default:
+        return _buildHomeScreen(activeLoans, overdueLoans, totalDue);
     }
   }
 
@@ -427,10 +451,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
   Widget _buildHeaderSection() {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 30,
-          child: Icon(Icons.person, size: 30),
-        ),
+        const CircleAvatar(radius: 30, child: Icon(Icons.person, size: 30)),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,9 +465,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
             ),
             Text(
               memberEmail,
-              style: GoogleFonts.poppins(
-                color: _textSecondary,
-              ),
+              style: GoogleFonts.poppins(color: _textSecondary),
             ),
           ],
         ),
@@ -454,7 +473,12 @@ class _MemberDashboardState extends State<MemberDashboard> {
     );
   }
 
-  Widget _buildStatsGrid(double savings, int activeLoans, int overdueLoans, double totalDue) {
+  Widget _buildStatsGrid(
+    double savings,
+    int activeLoans,
+    int overdueLoans,
+    double totalDue,
+  ) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -465,19 +489,35 @@ class _MemberDashboardState extends State<MemberDashboard> {
       children: [
         GestureDetector(
           onTap: () => _showSavingsDetails(),
-          child: _buildStatCard('Savings', _formatCurrency(savings), _savingsColor),
+          child: _buildStatCard(
+            'Savings',
+            _formatCurrency(savings),
+            _savingsColor,
+          ),
         ),
         GestureDetector(
           onTap: () => _showActiveLoans(),
-          child: _buildStatCard('Active Loans', activeLoans.toString(), _activeLoansColor),
+          child: _buildStatCard(
+            'Active Loans',
+            activeLoans.toString(),
+            _activeLoansColor,
+          ),
         ),
         GestureDetector(
           onTap: () => _showOverdueLoans(),
-          child: _buildStatCard('Overdue', overdueLoans.toString(), _overdueColor),
+          child: _buildStatCard(
+            'Overdue',
+            overdueLoans.toString(),
+            _overdueColor,
+          ),
         ),
         GestureDetector(
           onTap: () => _showTotalDueDetails(),
-          child: _buildStatCard('Total Due', _formatCurrency(totalDue), _totalDueColor),
+          child: _buildStatCard(
+            'Total Due',
+            _formatCurrency(totalDue),
+            _totalDueColor,
+          ),
         ),
       ],
     );
@@ -495,7 +535,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   void _showActiveLoans() {
-    final activeLoans = _loans.where((loan) => loan.status == 'Active').toList();
+    final activeLoans = _loans
+        .where((loan) => loan.status == 'Active')
+        .toList();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -508,7 +550,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   void _showOverdueLoans() {
-    final overdueLoans = _loans.where((loan) => loan.status == 'Overdue').toList();
+    final overdueLoans = _loans
+        .where((loan) => loan.status == 'Overdue')
+        .toList();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -565,8 +609,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   Widget _buildDuePaymentsSection() {
-    final duePayments = _loans.where((loan) => 
-        loan.status == 'Active' || loan.status == 'Overdue').toList();
+    final duePayments = _loans
+        .where((loan) => loan.status == 'Active' || loan.status == 'Overdue')
+        .toList();
 
     if (duePayments.isEmpty) {
       return Card(
@@ -577,10 +622,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
             children: [
               Icon(Icons.check_circle, size: 50, color: Colors.green),
               const SizedBox(height: 16),
-              Text(
-                'No Due Payments',
-                style: GoogleFonts.poppins(fontSize: 18),
-              ),
+              Text('No Due Payments', style: GoogleFonts.poppins(fontSize: 18)),
               const SizedBox(height: 8),
               Text(
                 'You have no active or overdue loans at this time',
@@ -616,18 +658,18 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Widget _buildLoanDueCard(Loan loan) {
     final isOverdue = loan.status == 'Overdue';
-    final nextPaymentDate = loan.payments.isEmpty 
+    final nextPaymentDate = loan.payments.isEmpty
         ? loan.disbursementDate.add(const Duration(days: 30))
         : loan.payments.last.date.add(const Duration(days: 30));
     final daysRemaining = nextPaymentDate.difference(DateTime.now()).inDays;
     // final double amountDue = loan.remainingBalance;
     // final double nextPaymentAmount = loan.totalRepayment / loan.repaymentPeriod;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isOverdue 
+        color: isOverdue
             ? _overdueColor.withOpacity(0.1)
             : _activeLoansColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
@@ -644,12 +686,10 @@ class _MemberDashboardState extends State<MemberDashboard> {
             children: [
               Text(
                 'Loan #${loan.id.substring(0, 8)}',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
               ),
               Text(
-                isOverdue 
+                isOverdue
                     ? '${-daysRemaining} days overdue'
                     : '$daysRemaining days remaining',
                 style: GoogleFonts.poppins(
@@ -659,17 +699,24 @@ class _MemberDashboardState extends State<MemberDashboard> {
             ],
           ),
           const SizedBox(height: 10),
-          _buildLoanDetailRow('Next Payment:', _formatCurrency(loan.nextPaymentAmount)),
-          _buildLoanDetailRow('Amount Due:', _formatCurrency(loan.remainingBalance)),
-          _buildLoanDetailRow('Due Date:', DateFormat('MMM d, y').format(nextPaymentDate)),
+          _buildLoanDetailRow(
+            'Next Payment:',
+            _formatCurrency(loan.nextPaymentAmount),
+          ),
+          _buildLoanDetailRow(
+            'Amount Due:',
+            _formatCurrency(loan.remainingBalance),
+          ),
+          _buildLoanDetailRow(
+            'Due Date:',
+            DateFormat('MMM d, y').format(nextPaymentDate),
+          ),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => _makePayment(loan),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: _primaryColor),
               child: const Text('Make Payment'),
             ),
           ),
@@ -695,7 +742,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Widget _buildRecentTransactions() {
     final recentTransactions = _transactions.take(3).toList();
-    
+
     if (recentTransactions.isEmpty) return const SizedBox.shrink();
 
     return Card(
@@ -737,13 +784,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
       ),
       title: Text(
         '${txn.type} - ${_formatCurrency(txn.amount)}',
-        style: GoogleFonts.poppins(
-          fontWeight: FontWeight.w500,
-        ),
+        style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
       ),
-      subtitle: Text(
-        '${DateFormat('MMM d').format(txn.date)} • ${txn.method}',
-      ),
+      subtitle: Text('${DateFormat('MMM d').format(txn.date)} • ${txn.method}'),
       trailing: Chip(
         label: Text(txn.status),
         backgroundColor: _getStatusColor(txn.status),
@@ -753,10 +796,14 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'completed': return Colors.green.withOpacity(0.2);
-      case 'pending': return Colors.orange.withOpacity(0.2);
-      case 'failed': return Colors.red.withOpacity(0.2);
-      default: return Colors.grey.withOpacity(0.2);
+      case 'completed':
+        return Colors.green.withOpacity(0.2);
+      case 'pending':
+        return Colors.orange.withOpacity(0.2);
+      case 'failed':
+        return Colors.red.withOpacity(0.2);
+      default:
+        return Colors.grey.withOpacity(0.2);
     }
   }
 
@@ -840,13 +887,17 @@ class _MemberDashboardState extends State<MemberDashboard> {
             DropdownButtonFormField<String>(
               value: methodController.text,
               items: const [
-                DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
-                DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                DropdownMenuItem(
+                  value: 'Mobile Money',
+                  child: Text('Mobile Money'),
+                ),
+                DropdownMenuItem(
+                  value: 'Bank Transfer',
+                  child: Text('Bank Transfer'),
+                ),
               ],
               onChanged: (value) => methodController.text = value!,
-              decoration: const InputDecoration(
-                labelText: 'Payment Method',
-              ),
+              decoration: const InputDecoration(labelText: 'Payment Method'),
             ),
           ],
         ),
@@ -894,41 +945,43 @@ class _MemberDashboardState extends State<MemberDashboard> {
   Future<void> _processDeposit(double amount, String method) async {
     try {
       await FirebaseFirestore.instance
-          .collection('members')
+          .collection('users')
           .doc(memberId)
           .collection('savings')
           .add({
-        'amount': amount,
-        'date': DateTime.now(),
-        'type': 'Deposit',
-        'method': method,
-      });
+            'amount': amount,
+            'date': DateTime.now(),
+            'type': 'Deposit',
+            'method': method,
+          });
 
       await FirebaseFirestore.instance
-          .collection('members')
+          .collection('users')
           .doc(memberId)
           .collection('transactions')
           .add({
-        'amount': amount,
-        'date': DateTime.now(),
-        'type': 'Deposit',
-        'status': 'Completed',
-        'method': method,
-      });
+            'amount': amount,
+            'date': DateTime.now(),
+            'type': 'Deposit',
+            'status': 'Completed',
+            'method': method,
+          });
 
       setState(() {
         _currentSavings += amount;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Deposit of ${_formatCurrency(amount)} successful')),
+        SnackBar(
+          content: Text('Deposit of ${_formatCurrency(amount)} successful'),
+        ),
       );
 
       _fetchSavingsData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error processing deposit: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error processing deposit: $e')));
     }
   }
 
@@ -985,7 +1038,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
         Expanded(
           child: ListView.builder(
             itemCount: _transactions.length,
-            itemBuilder: (context, index) => _buildTransactionCard(_transactions[index]),
+            itemBuilder: (context, index) =>
+                _buildTransactionCard(_transactions[index]),
           ),
         ),
       ],
@@ -1002,9 +1056,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
         ),
         title: Text(
           '${txn.type} - ${_formatCurrency(txn.amount)}',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w500,
-          ),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
           '${DateFormat('MMM d, y').format(txn.date)} • ${txn.method}',
@@ -1054,10 +1106,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(width: 8),
           Text(value),
         ],
@@ -1068,7 +1117,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
   Widget _buildNotificationsScreen() {
     return ListView.builder(
       itemCount: _notifications.length,
-      itemBuilder: (context, index) => _buildNotificationCard(_notifications[index]),
+      itemBuilder: (context, index) =>
+          _buildNotificationCard(_notifications[index]),
     );
   }
 
@@ -1171,10 +1221,19 @@ class _MemberDashboardState extends State<MemberDashboard> {
       unselectedItemColor: _textSecondary,
       type: BottomNavigationBarType.fixed,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.savings), label: 'Savings'),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Transactions'),
-        BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notifications'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history),
+          label: 'Transactions',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.notifications),
+          label: 'Notifications',
+        ),
       ],
     );
   }
@@ -1182,7 +1241,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
   @override
   Widget build(BuildContext context) {
     final activeLoans = _loans.where((loan) => loan.status == 'Active').length;
-    final overdueLoans = _loans.where((loan) => loan.status == 'Overdue').length;
+    final overdueLoans = _loans
+        .where((loan) => loan.status == 'Overdue')
+        .length;
     final totalDue = _calculateTotalDue();
 
     return Scaffold(
@@ -1209,18 +1270,18 @@ class _MemberDashboardState extends State<MemberDashboard> {
       ),
       body: _getCurrentScreen(activeLoans, overdueLoans, totalDue),
       bottomNavigationBar: _buildBottomNavigationBar(),
-      floatingActionButton: _currentIndex == 0 
+      floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
               onPressed: _showLoanApplication,
               backgroundColor: _primaryColor,
               child: const Icon(Icons.add),
             )
-          : _currentIndex == 3 
-              ? FloatingActionButton(
-                  onPressed: _submitFeedback,
-                  child: const Icon(Icons.feedback),
-                )
-              : null,
+          : _currentIndex == 3
+          ? FloatingActionButton(
+              onPressed: _submitFeedback,
+              child: const Icon(Icons.feedback),
+            )
+          : null,
     );
   }
 }
@@ -1256,8 +1317,8 @@ class SavingsDetailsScreen extends StatelessWidget {
               Text(
                 'Savings Details',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               Card(
@@ -1272,8 +1333,11 @@ class SavingsDetailsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        NumberFormat.currency(symbol: 'UGX ').format(currentSavings),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        NumberFormat.currency(
+                          symbol: 'UGX ',
+                        ).format(currentSavings),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.green[700],
                             ),
@@ -1291,8 +1355,12 @@ class SavingsDetailsScreen extends StatelessWidget {
                     final item = savingsHistory[index];
                     return ListTile(
                       leading: Icon(
-                        item.type == 'Deposit' ? Icons.arrow_downward : Icons.arrow_upward,
-                        color: item.type == 'Deposit' ? Colors.green : Colors.red,
+                        item.type == 'Deposit'
+                            ? Icons.arrow_downward
+                            : Icons.arrow_upward,
+                        color: item.type == 'Deposit'
+                            ? Colors.green
+                            : Colors.red,
                       ),
                       title: Text(
                         '${item.type} - ${NumberFormat.currency(symbol: 'UGX ').format(item.amount)}',
@@ -1345,8 +1413,8 @@ class LoansListScreen extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -1355,14 +1423,18 @@ class LoansListScreen extends StatelessWidget {
                   itemCount: loans.length,
                   itemBuilder: (context, index) {
                     final loan = loans[index];
-                    final nextPaymentDate = loan.payments.isEmpty 
+                    final nextPaymentDate = loan.payments.isEmpty
                         ? loan.disbursementDate.add(const Duration(days: 30))
                         : loan.payments.last.date.add(const Duration(days: 30));
-                    final daysRemaining = nextPaymentDate.difference(DateTime.now()).inDays;
+                    final daysRemaining = nextPaymentDate
+                        .difference(DateTime.now())
+                        .inDays;
                     final isOverdue = daysRemaining < 0;
-                    final nextPaymentAmount = loan.totalRepayment / 
-                        (loan.dueDate.difference(loan.disbursementDate).inDays / 30);
-                    
+                    final nextPaymentAmount =
+                        loan.totalRepayment /
+                        (loan.dueDate.difference(loan.disbursementDate).inDays /
+                            30);
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       child: Padding(
@@ -1389,16 +1461,28 @@ class LoansListScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 10),
-                            _buildLoanDetailRow('Original Amount:', 
-                                NumberFormat.currency(symbol: 'UGX ').format(loan.amount)),
-                            _buildLoanDetailRow('Remaining Balance:', 
-                                NumberFormat.currency(symbol: 'UGX ').format(loan.remainingBalance)),
-                            _buildLoanDetailRow('Next Payment:', 
-                                NumberFormat.currency(symbol: 'UGX ').format(nextPaymentAmount)),
                             _buildLoanDetailRow(
-                              'Due Date:', 
+                              'Original Amount:',
+                              NumberFormat.currency(
+                                symbol: 'UGX ',
+                              ).format(loan.amount),
+                            ),
+                            _buildLoanDetailRow(
+                              'Remaining Balance:',
+                              NumberFormat.currency(
+                                symbol: 'UGX ',
+                              ).format(loan.remainingBalance),
+                            ),
+                            _buildLoanDetailRow(
+                              'Next Payment:',
+                              NumberFormat.currency(
+                                symbol: 'UGX ',
+                              ).format(nextPaymentAmount),
+                            ),
+                            _buildLoanDetailRow(
+                              'Due Date:',
                               '${DateFormat('MMM d, y').format(nextPaymentDate)} '
-                              '(${isOverdue ? 'Overdue ${-daysRemaining} days' : 'Due in $daysRemaining days'})',
+                                  '(${isOverdue ? 'Overdue ${-daysRemaining} days' : 'Due in $daysRemaining days'})',
                             ),
                             const SizedBox(height: 16),
                             SizedBox(
@@ -1406,7 +1490,9 @@ class LoansListScreen extends StatelessWidget {
                               child: ElevatedButton(
                                 onPressed: () => onPayment(loan),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).primaryColor,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).primaryColor,
                                 ),
                                 child: const Text('Make Payment'),
                               ),
@@ -1430,10 +1516,7 @@ class LoansListScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(width: 8),
           Text(value),
         ],
@@ -1457,8 +1540,10 @@ class TotalDueScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final activeLoans = loans.where((loan) => loan.status == 'Active').toList();
-    final overdueLoans = loans.where((loan) => loan.status == 'Overdue').toList();
-    
+    final overdueLoans = loans
+        .where((loan) => loan.status == 'Overdue')
+        .toList();
+
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.9,
@@ -1478,8 +1563,8 @@ class TotalDueScreen extends StatelessWidget {
               Text(
                 'Total Due Summary',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               Card(
@@ -1495,7 +1580,8 @@ class TotalDueScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         NumberFormat.currency(symbol: 'UGX ').format(totalDue),
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Colors.teal[700],
                             ),
@@ -1520,26 +1606,33 @@ class TotalDueScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLoanTypeSection(String title, List<Loan> loans, BuildContext context) {
+  Widget _buildLoanTypeSection(
+    String title,
+    List<Loan> loans,
+    BuildContext context,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         ...loans.map((loan) {
-          final nextPaymentDate = loan.payments.isEmpty 
+          final nextPaymentDate = loan.payments.isEmpty
               ? loan.disbursementDate.add(const Duration(days: 30))
               : loan.payments.last.date.add(const Duration(days: 30));
-          final daysRemaining = nextPaymentDate.difference(DateTime.now()).inDays;
+          final daysRemaining = nextPaymentDate
+              .difference(DateTime.now())
+              .inDays;
           final isOverdue = daysRemaining < 0;
-          final nextPaymentAmount = loan.totalRepayment / 
+          final nextPaymentAmount =
+              loan.totalRepayment /
               (loan.dueDate.difference(loan.disbursementDate).inDays / 30);
-          
+
           return ListTile(
             title: Text('Loan #${loan.id.substring(0, 8)}'),
             subtitle: Text(
