@@ -6,27 +6,28 @@ import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/member_dashboard.dart';
 import 'package:smartsacco/pages/register.dart';
 import 'package:smartsacco/pages/splash_page.dart';
-// ignore: unused_import
 import 'package:smartsacco/pages/emailverification_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
 import 'package:smartsacco/pages/voicelogin.dart';
-
 import 'package:smartsacco/utils/logger.dart';
-
-
 import 'package:app_links/app_links.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setupLogging(); // Initialize logging
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  setupLogging();
+  final d = DefaultFirebaseOptions.currentPlatform;
+    await Firebase.initializeApp(
+      options: kIsWeb
+          ? DefaultFirebaseOptions.web
+          : DefaultFirebaseOptions.currentPlatform,
+    );
   runApp(const SaccoDashboardApp());
 }
 
@@ -46,6 +47,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
   void initState() {
     super.initState();
     _initializeDeepLinks();
+    debugPrint("SplashPage loaded ✅");
   }
 
   void _initializeDeepLinks() {
@@ -57,7 +59,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         _handleIncomingLink(uri.toString());
       },
       onError: (err) {
-        print('Deep link error: $err');
+        debugPrint('Deep link error: $err');
       },
     );
   }
@@ -95,7 +97,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         }
       }
     } catch (e) {
-      print('Error handling deep link: $e');
+      debugPrint('Error handling deep link: $e');
     }
   }
 
@@ -176,3 +178,4 @@ class DeepLinkHandler {
     );
   }
 }
+

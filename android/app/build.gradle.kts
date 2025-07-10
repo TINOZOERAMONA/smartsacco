@@ -34,8 +34,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
 
 
+    }
+
+    dependencies {
+    implementation("androidx.multidex:multidex:2.0.1")
     }
 
     buildTypes {
@@ -51,7 +56,14 @@ flutter {
     source = "../.."
 }
 
-
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    
+}
 
 
 

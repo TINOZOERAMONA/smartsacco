@@ -4,7 +4,7 @@ import 'package:smartsacco/services/auth.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -76,12 +76,16 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         // EXISTING: Get user role from route arguments (if available)
-        final userRole = ModalRoute.of(context)?.settings.arguments as String?;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
+          final role = doc.data()?['role'];
         // EXISTING: Navigate based on role
-        if (userRole == 'Admin') {
+        if (role == 'Admin') {
           Navigator.pushNamedAndRemoveUntil(
-              context, '/dashboard', (route) => false);
+              context, '/admin-dashboard', (route) => false);        
         } else {
           Navigator.pushNamedAndRemoveUntil(
               context, '/member-dashboard', (route) => false);
@@ -140,14 +144,14 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // UPDATED: Changed from Phone Number to Email with controller and validation
+              
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(
-                    labelText: "Email", // CHANGED: From "Phone Number" to "Email"
+                    labelText: "Email",
                     border: OutlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.emailAddress, // CHANGED: From phone to email
+                  keyboardType: TextInputType.emailAddress, 
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
