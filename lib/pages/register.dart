@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:smartsacco/services/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:smartsacco/pages/emailverification_page.dart';
@@ -25,7 +24,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   bool _isRegistering = false;
   bool _isPasswordObscured = true;
 
-  final FirebaseAuthService _authService = FirebaseAuthService();
+ 
 
   @override
   void dispose() {

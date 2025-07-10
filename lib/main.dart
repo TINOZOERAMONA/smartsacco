@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:smartsacco/pages/dashboard_page.dart';
 import 'package:smartsacco/pages/forgotpassword.dart';
 import 'package:smartsacco/pages/home_page.dart';
 import 'package:smartsacco/pages/login.dart';
@@ -101,6 +100,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -114,11 +114,13 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/login': (context) => const LoginPage(),
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/register': (context) => const RegisterPage(),
-        '/dashboard': (context) => const DashboardPage(),
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
         '/member-dashboard': (context) => const MemberDashboard(),
+        '/admin-dashboard': (context) => const AdminMainPage(),
+        '/members': (context) => const MembersPage(),
+        '/member_details': (context) => const MemberDetailsPage(),
 
       },
       // Handle routes that need parameters

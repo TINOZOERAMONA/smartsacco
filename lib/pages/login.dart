@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-
-import 'package:smartsacco/services/auth.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logging/logging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 class LoginPage extends StatefulWidget {
@@ -13,24 +11,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // ADDED: Logger for debugging
   final _log = Logger('LoginPage');
-
-  // ADDED: Form key for validation
   final _formKey = GlobalKey<FormState>();
-
-  // ADDED: Controllers for text fields
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // ADDED: Create instance of your Firebase Auth Service
-  final FirebaseAuthService _authService = FirebaseAuthService();
-
   bool _isPasswordObscured = true;
-  // ADDED: Loading state for login process
   bool _isLoggingIn = false;
 
-  // ADDED: Dispose controllers to prevent memory leaks
   @override
   void dispose() {
     _emailController.dispose();
@@ -38,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // ADDED: Login method with Firebase authentication
   void _login() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,20 +41,35 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // ADDED: Get values from controllers
       String email = _emailController.text.trim();
       String password = _passwordController.text;
 
-      // ADDED: Call your Firebase authentication method
-      User? user = await _authService.loginWithEmailAndPassword(email, password);
+      // Sign in with Firebase Auth
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      User? user = userCredential.user;
 
       if (!mounted) return;
 
       if (user != null) {
-        // ADDED: Login successful
-        _log.info('Successfully logged in User: ${user.email} with UID: ${user.uid}');
+        if (!user.emailVerified) {
+          // Navigate to Email Verification screen if not verified
+          Navigator.pushReplacementNamed(context, '/email_verification',
+              arguments: {'email': email});
+          return;
+        }
 
-        // ADDED: Show success message
+        // Fetch user role from Firestore
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        final role = userDoc.data()?['role']?.toString().toLowerCase() ?? 'member';
+
+        _log.info('Logged in User: ${user.email} with role: $role');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Login successful!"),
@@ -90,21 +92,19 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushNamedAndRemoveUntil(
               context, '/member-dashboard', (route) => false);
         }
-      } else {
-        // ADDED: Login failed
-        _log.warning('Login failed for email: $email');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Login failed. Please check your credentials."),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
-    } catch (e) {
-      // ADDED: Handle any errors
+    } on FirebaseAuthException catch (e) {
+      _log.warning('Login failed: ${e.message}');
       if (!mounted) return;
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Login failed: ${e.message}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
       _log.warning('Login error: $e');
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +114,6 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     } finally {
-      // ADDED: Always stop loading state
       if (mounted) {
         setState(() {
           _isLoggingIn = false;
@@ -128,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Color(0xFF007C91),
+        backgroundColor: const Color(0xFF007C91),
         title: const Text(
           "Login",
           style: TextStyle(color: Colors.white),
@@ -138,7 +137,6 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          // ADDED: Wrap with Form for validation
           child: Form(
             key: _formKey,
             child: Column(
@@ -163,7 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // UPDATED: Added controller and validation
+                // Password Field
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -191,10 +189,10 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 24),
+                // Login Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    // UPDATED: Changed onPressed to call _login method and handle loading state
                     onPressed: _isLoggingIn ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF007C91),
@@ -203,19 +201,19 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    // UPDATED: Show loading indicator when logging in
                     child: _isLoggingIn
                         ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    )
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
                         : const Text(
-                      "Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                            "Login",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -234,15 +232,14 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
-                    child: const Text(
-                        "Don't have an account? Register",
-                        style: TextStyle(color: Color(0xFF007C91),
-                        )
-                    )
-                )
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                  child: const Text(
+                    "Don't have an account? Register",
+                    style: TextStyle(color: Color(0xFF007C91)),
+                  ),
+                ),
               ],
             ),
           ),

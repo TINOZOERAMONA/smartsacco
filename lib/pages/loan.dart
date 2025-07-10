@@ -9,6 +9,7 @@ class Loan {
   final double interestRate;
   final double totalRepayment;
   final List<Payment> payments;
+  final int repaymentPeriod;
 
   Loan({
     required this.id,
@@ -20,25 +21,34 @@ class Loan {
     required this.type,
     required this.interestRate,
     required this.totalRepayment,
+    required this.repaymentPeriod,
     this.payments = const [],
   });
 
-  factory Loan.fromJson(Map<String, dynamic> json) {
-    return Loan(
-      id: json['id'],
-      amount: json['amount'].toDouble(),
-      remainingBalance: json['remainingBalance'].toDouble(),
-      disbursementDate: DateTime.parse(json['disbursementDate']),
-      dueDate: DateTime.parse(json['dueDate']),
-      status: json['status'],
-      type: json['type'],
-      interestRate: json['interestRate'].toDouble(),
-      totalRepayment: json['totalRepayment'].toDouble(),
-      payments: (json['payments'] as List)
-          .map((p) => Payment.fromJson(p))
-          .toList(),
-    );
+  double get nextPaymentAmount {
+    if (repaymentPeriod > 0) {
+      return totalRepayment / repaymentPeriod;
+    }
+    return 0;
   }
+
+  factory Loan.fromJson(Map<String, dynamic> json) {
+  return Loan(
+    id: json['id'],
+    amount: (json['amount'] as num).toDouble(), // Fix: move closing parenthesis before .toDouble()
+    remainingBalance: (json['remainingBalance'] as num).toDouble(),
+    disbursementDate: DateTime.parse(json['disbursementDate']),
+    dueDate: DateTime.parse(json['dueDate']),
+    status: json['status'],
+    type: json['type'],
+    interestRate: (json['interestRate'] as num).toDouble(),
+    totalRepayment: (json['totalRepayment'] as num).toDouble(),
+    repaymentPeriod: json['repaymentPeriod'] as int, // cast to int explicitly
+    payments: (json['payments'] as List<dynamic>)
+        .map((p) => Payment.fromJson(p))
+        .toList(),
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {
@@ -61,11 +71,7 @@ class Payment {
   final DateTime date;
   final String reference;
 
-  Payment({
-    required this.amount,
-    required this.date,
-    required this.reference,
-  });
+  Payment({required this.amount, required this.date, required this.reference});
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
