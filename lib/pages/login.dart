@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
           .doc(user.uid)
           .get();
 
-          final role = doc.data()?['role'];
+          final anotherRole = doc.data()?['role'];
         // EXISTING: Navigate based on role
         if (role == 'Admin') {
           Navigator.pushNamedAndRemoveUntil(
