@@ -11,25 +11,29 @@ class MembersPage extends StatelessWidget {
     final loansSnapshot =
         await FirebaseFirestore.instance.collection('loans').get();
 
-    // Map userId to latest loan status (or 'none')
-    final Map<String, String> loanStatuses = {};
+    // Map of userId to total approved (and unpaid) loan amount
+    final Map<String, double> totalApprovedLoans = {};
 
-    for (var loan in loansSnapshot.docs) {
-      final data = loan.data();
+    for (var loanDoc in loansSnapshot.docs) {
+      final data = loanDoc.data();
       final userId = data['userId'];
-      final status = data['status'];
-      loanStatuses[userId] = status; // Last loan status will overwrite previous
+      final status = data['status']?.toString().toLowerCase() ?? '';
+      final remaining = (data['remainingBalance'] ?? 0).toDouble();
+
+      if (status == 'approved' && remaining > 0) {
+        totalApprovedLoans[userId] = (totalApprovedLoans[userId] ?? 0) + remaining;
+      }
     }
 
     return usersSnapshot.docs.map((doc) {
       final data = doc.data();
       final id = doc.id;
+
       return {
         'id': id,
-        'name': data['name'] ?? 'N/A',
-        'email': data['email'] ?? 'N/A',
-        'phone': data['phone'] ?? 'N/A',
-        'loanStatus': loanStatuses[id] ?? 'none',
+        'fullName': data['fullName'] ?? 'No Name',
+        'email': data['email'] ?? 'No Email',
+        'totalLoan': totalApprovedLoans[id] ?? 0.0,
       };
     }).toList();
   }
@@ -57,18 +61,17 @@ class MembersPage extends StatelessWidget {
             itemCount: members.length,
             itemBuilder: (context, index) {
               final member = members[index];
-              final loanStatus = member['loanStatus'];
+              final loanAmount = member['totalLoan'] as double;
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
-                  title: Text(member['name']),
+                  title: Text(member['fullName']),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Email: ${member['email']}'),
-                      Text('Phone: ${member['phone']}'),
-                      Text('Loan Status: ${loanStatus.toUpperCase()}'),
+                      Text('Total Approved Loans: UGX ${loanAmount.toStringAsFixed(2)}'),
                     ],
                   ),
                   onTap: () {

@@ -21,18 +21,12 @@ class OverviewPage extends StatefulWidget {
 }
 
 class OverviewPageState extends State<OverviewPage> {
-  // Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // State variables
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoadingTransactions = true;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-
-  // ------------------
-  // Lifecycle Methods
-  // ------------------
 
   @override
   void initState() {
@@ -45,10 +39,6 @@ class OverviewPageState extends State<OverviewPage> {
     _searchController.dispose();
     super.dispose();
   }
-
-  // ------------------------
-  // Data Loading & Helpers
-  // ------------------------
 
   Future<void> _loadRecentTransactions() async {
     setState(() {
@@ -156,9 +146,28 @@ class OverviewPageState extends State<OverviewPage> {
     }
   }
 
-  // ------------------
-  // UI Builders
-  // ------------------
+  // New: Stream to listen to live balance updates
+  Stream<double> getCurrentBalanceStream() {
+  return _firestore.collectionGroup('transactions').snapshots().map((snapshot) {
+    double totalDeposits = 0;
+    double totalWithdrawals = 0;
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final amount = (data['amount'] ?? 0).toDouble();
+      final type = (data['type'] ?? '').toString().toLowerCase();
+
+      if (type == 'deposit') {
+        totalDeposits += amount;
+      } else if (type == 'withdraw') {
+        totalWithdrawals += amount;
+      }
+    }
+
+    return totalDeposits - totalWithdrawals;
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -241,15 +250,8 @@ class OverviewPageState extends State<OverviewPage> {
                         onTap: () => Navigator.push(context,
                             MaterialPageRoute(builder: (_) => const PendingLoansPage())),
                       ),
-                      _buildSummaryCard(
-                        title: 'Current Balance',
-                        icon: Icons.account_balance_wallet,
-                        iconColor: Colors.teal.shade700,
-                        valueFuture: _getCurrentBalance(),
-                        theme: theme,
-                        isDark: isDark,
-                        onTap: () {},
-                      ),
+                      // Live current balance card using StreamBuilder
+                      _buildLiveBalanceCard(theme, isDark),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -262,6 +264,59 @@ class OverviewPageState extends State<OverviewPage> {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveBalanceCard(ThemeData theme, bool isDark) {
+    final cardColor = isDark ? Colors.grey[800] : Colors.white;
+
+    return Card(
+      color: cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 6,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: StreamBuilder<double>(
+          stream: getCurrentBalanceStream(),
+          builder: (context, snapshot) {
+            String value = 'Loading...';
+            if (snapshot.hasData) {
+              value = NumberFormat.currency(
+                locale: 'en_UG',
+                symbol: 'UGX',
+                decimalDigits: 2,
+              ).format(snapshot.data);
+            } else if (snapshot.hasError) {
+              value = 'Error';
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.account_balance_wallet, size: 36, color: Colors.teal.shade700),
+                const SizedBox(height: 12),
+                Text(
+                  'Current Balance',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal.shade700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -533,42 +588,6 @@ class OverviewPageState extends State<OverviewPage> {
     );
   }
 
-  // -----------------------
-  // Async Data Fetchers
-  // -----------------------
-
-  Future<String> _getCurrentBalance() async {
-    try {
-      final snapshot = await _firestore.collection('momo_callbacks').get();
-
-      double totalDeposits = 0;
-      double totalWithdrawals = 0;
-
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final amount = (data['amount'] ?? 0).toDouble();
-        final type = (data['type'] ?? '').toString().toLowerCase();
-
-        if (type == 'deposit') {
-          totalDeposits += amount;
-        } else if (type == 'withdraw') {
-          totalWithdrawals += amount;
-        }
-      }
-
-      final currentBalance = totalDeposits - totalWithdrawals;
-
-      return NumberFormat.currency(
-        locale: 'en_UG',
-        symbol: 'UGX',
-        decimalDigits: 2,
-      ).format(currentBalance);
-    } catch (e) {
-      debugPrint('Error calculating current balance: $e');
-      return 'Error';
-    }
-  }
-
   Future<String> _getTotalMembersCount() async {
     try {
       final snapshot = await _firestore.collection('users').get();
@@ -595,21 +614,20 @@ class OverviewPageState extends State<OverviewPage> {
   }
 
   Future<String> _getPendingLoansCount() async {
-  try {
-    final snapshot = await _firestore.collectionGroup('loans').get();
+    try {
+      final snapshot = await _firestore.collectionGroup('loans').get();
 
-    final pendingLoans = snapshot.docs.where((doc) {
-      final status = (doc['status'] ?? '').toString().toLowerCase().trim();
-      return status == 'pending';  // Check this matches your detail page filter exactly
-    }).toList();
+      final pendingLoans = snapshot.docs.where((doc) {
+        final status = (doc['status'] ?? '').toString().toLowerCase().trim();
+        return status == 'pending';
+      }).toList();
 
-    return pendingLoans.length.toString();
-  } catch (e) {
-    debugPrint('Error fetching pending loans count: $e');
-    return '0';
+      return pendingLoans.length.toString();
+    } catch (e) {
+      debugPrint('Error fetching pending loans count: $e');
+      return '0';
+    }
   }
-}
-
 
   Future<Map<String, int>> _getLoanStats() async {
     try {

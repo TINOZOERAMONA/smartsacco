@@ -20,6 +20,7 @@ class LoanApprovalPage extends StatefulWidget {
 class _LoanApprovalPageState extends State<LoanApprovalPage> {
   String? _decision;
   final TextEditingController _notesController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   bool get isLocked {
     final status = widget.loanData['status']?.toString().toLowerCase() ?? '';
@@ -36,6 +37,8 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
     required String status,
     required String notes,
   }) async {
+    if (!_formKey.currentState!.validate()) return;
+
     final decisionBy = FirebaseAuth.instance.currentUser?.uid ?? 'admin';
 
     try {
@@ -46,31 +49,95 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
         'notes': notes,
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Loan status updated to $status')),
+        SnackBar(
+          content: Text('Loan $status successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  Widget _buildInfoRow(String label, dynamic value) {
+  Widget _buildInfoCard() {
+    final data = widget.loanData;
+    final currencyFormat = NumberFormat.currency(symbol: 'UGX ');
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Loan Details',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow('Amount', currencyFormat.format(data['amount'])),
+            _buildInfoRow('Purpose', data['purpose'] ?? 'N/A'),
+            _buildInfoRow('Type', data['type'] ?? 'N/A'),
+            _buildInfoRow('Status', _getStatusText(data['status'])),
+            _buildInfoRow(
+              'Application Date',
+              _formatDate(data['applicationDate']),
+            ),
+            _buildInfoRow(
+              'Disbursement Date',
+              _formatDate(data['disbursementDate']),
+            ),
+            _buildInfoRow('Due Date', _formatDate(data['dueDate'])),
+            _buildInfoRow('Interest Rate', '${data['interestRate']}%'),
+            _buildInfoRow(
+              'Monthly Payment',
+              currencyFormat.format(data['monthlyPayment']),
+            ),
+            _buildInfoRow(
+              'Total Repayment',
+              currencyFormat.format(data['totalRepayment']),
+            ),
+            _buildInfoRow(
+              'Remaining Balance',
+              currencyFormat.format(data['remainingBalance']),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$label: ',
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              value is Timestamp
-                  ? DateFormat('yyyy-MM-dd').format(value.toDate())
-                  : value.toString(),
+              value,
               style: const TextStyle(color: Colors.black87),
             ),
           ),
@@ -79,10 +146,26 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
     );
   }
 
+  String _formatDate(dynamic date) {
+    if (date == null) return 'N/A';
+    if (date is Timestamp) {
+      return DateFormat('MMM dd, yyyy').format(date.toDate());
+    }
+    return date.toString();
+  }
+
+  String _getStatusText(String? status) {
+    if (status == null) return 'Pending';
+    return status[0].toUpperCase() + status.substring(1).toLowerCase();
+  }
+
   void _submitDecision() async {
     if (_decision == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a decision')),
+        const SnackBar(
+          content: Text('Please select a decision'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -95,82 +178,132 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
 
   @override
   Widget build(BuildContext context) {
-    final data = widget.loanData;
-    final loanStatus = (data['status'] ?? '').toString();
+    final loanStatus = widget.loanData['status']?.toString().toLowerCase() ?? '';
+    final isApprovedOrRejected = isLocked;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Loan Application Review'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blue.shade800,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            _buildInfoRow('Amount', '${data['amount']}'),
-            _buildInfoRow('Purpose', data['purpose']),
-            _buildInfoRow('Loan Type', data['type']),
-            _buildInfoRow('Status', loanStatus),
-            _buildInfoRow('Application Date', data['applicationDate']),
-            _buildInfoRow('Disbursement Date', data['disbursementDate']),
-            _buildInfoRow('Due Date', data['dueDate']),
-            _buildInfoRow('Interest Rate', '${data['interestRate']}%'),
-            _buildInfoRow('Monthly Payment', '${data['monthlyPayment']}'),
-            _buildInfoRow('Total Repayment', '${data['totalRepayment']}'),
-            _buildInfoRow('Remaining Balance', '${data['remainingBalance']}'),
+      backgroundColor: Colors.grey.shade50,
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoCard(),
+              const SizedBox(height: 24),
+              
+              // Decision Section
+              const Text(
+                'Loan Decision',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
 
-            const SizedBox(height: 20),
-            const Text(
-              'Decision',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-
-            if (isLocked)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 16),
-                child: Text(
-                  'This loan has already been $loanStatus.\nDecision cannot be changed.',
-                  style: const TextStyle(color: Colors.grey),
+              if (isApprovedOrRejected)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: loanStatus == 'approved'
+                        ? Colors.green.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: loanStatus == 'approved'
+                          ? Colors.green.shade100
+                          : Colors.red.shade100,
+                    ),
+                  ),
+                  child: Text(
+                    'This loan has already been ${_getStatusText(loanStatus)}.\n'
+                    'Decision cannot be changed.',
+                    style: TextStyle(
+                      color: loanStatus == 'approved'
+                          ? Colors.green.shade800
+                          : Colors.red.shade800,
+                    ),
+                  ),
+                )
+              else
+                Card(
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: 'Decision',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          value: _decision,
+                          validator: (value) =>
+                              value == null ? 'Please select a decision' : null,
+                          onChanged: (value) {
+                            setState(() {
+                              _decision = value;
+                            });
+                          },
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'approved',
+                              child: Text('Approve Loan'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'rejected',
+                              child: Text('Reject Loan'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _notesController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: 'Decision Notes (Optional)',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignLabelWithHint: true,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            onPressed: _submitDecision,
+                            child: const Text(
+                              'Submit Decision',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              )
-            else
-              DropdownButton<String>(
-                isExpanded: true,
-                hint: const Text('Select Decision'),
-                value: _decision,
-                onChanged: (value) {
-                  setState(() {
-                    _decision = value;
-                  });
-                },
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Approved',
-                    child: Text('Approve'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Rejected',
-                    child: Text('Reject'),
-                  ),
-                ],
-              ),
-
-            const SizedBox(height: 10),
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              enabled: !isLocked,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isLocked ? null : _submitDecision,
-              child: const Text('Submit Decision'),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
