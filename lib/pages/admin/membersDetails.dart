@@ -1,7 +1,6 @@
-// 📦 Required imports
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // for formatting timestamp
+import 'package:intl/intl.dart';
 
 class MemberDetailsPage extends StatelessWidget {
   const MemberDetailsPage({super.key});
@@ -13,16 +12,17 @@ class MemberDetailsPage extends StatelessWidget {
         .get();
     return userSnapshot.data() ?? {};
   }
-
   Future<List<Map<String, dynamic>>> _fetchUserLoans(String userId) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('loans')
-        .get();
+  final snapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .doc(userId)
+      .collection('loans')
+      .get();
 
-    return snapshot.docs.map((doc) => doc.data()).toList();
-  }
+  debugPrint('Loans fetched for user $userId: ${snapshot.docs.length}');
+  return snapshot.docs.map((doc) => doc.data()).toList();
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -43,69 +43,89 @@ class MemberDetailsPage extends StatelessWidget {
           }
 
           final userData = userSnapshot.data ?? {};
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Name: ${userData['name'] ?? 'N/A'}',
-                    style: const TextStyle(fontSize: 18)),
-                const SizedBox(height: 8),
-                Text('Email: ${userData['email'] ?? 'N/A'}',
-                    style: const TextStyle(fontSize: 16)),
-                const SizedBox(height: 8),
-                Text('Phone: ${userData['phone'] ?? 'N/A'}',
-                    style: const TextStyle(fontSize: 16)),
-                const Divider(height: 30),
-                const Text('Loan History',
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _fetchUserLoans(userId),
-                  builder: (context, loanSnapshot) {
-                    if (loanSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (loanSnapshot.hasError) {
-                      return Center(
-                          child: Text('Error: ${loanSnapshot.error}'));
-                    }
+          return FutureBuilder<List<Map<String, dynamic>>>(
+            future: _fetchUserLoans(userId),
+            builder: (context, loanSnapshot) {
+              if (loanSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (loanSnapshot.hasError) {
+                return Center(child: Text('Error: ${loanSnapshot.error}'));
+              }
 
-                    final loans = loanSnapshot.data ?? [];
-                    if (loans.isEmpty) {
-                      return const Text('No loans found for this user.');
-                    }
+              final loans = loanSnapshot.data ?? [];
+              double totalLoan = 0.0;
+              double totalRepaid = 0.0;
 
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: loans.length,
-                      itemBuilder: (context, index) {
-                        final loan = loans[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: ListTile(
-                            title: Text(
-                                'Amount: UGX ${loan['amount']?.toString() ?? 'N/A'}'),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Status: ${loan['status'] ?? 'N/A'}'),
-                                Text(
-                                  'Applied on: ${loan['applicationDate'] != null ? DateFormat('yyyy-MM-dd').format(loan['applicationDate'].toDate()) : 'N/A'}',
-                                ),
-                              ],
+              for (var loan in loans) {
+                totalLoan += (loan['amount'] ?? 0).toDouble();
+                totalRepaid += (loan['repaidAmount'] ?? 0).toDouble();
+              }
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Name: ${userData['name'] ?? 'N/A'}',
+                        style: const TextStyle(fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text('Email: ${userData['email'] ?? 'N/A'}',
+                        style: const TextStyle(fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text('Phone: ${userData['phone'] ?? 'N/A'}',
+                        style: const TextStyle(fontSize: 16)),
+                    const SizedBox(height: 8),
+                    const Divider(height: 30),
+
+                    Text('Total Loan Amount: UGX ${totalLoan.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('Total Repaid: UGX ${totalRepaid.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+
+                    const Text('Loan History',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+
+                    if (loans.isEmpty)
+                      const Text('No loans found for this user.')
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: loans.length,
+                        itemBuilder: (context, index) {
+                          final loan = loans[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            child: ListTile(
+                              title: Text(
+                                  'Amount: UGX ${loan['amount']?.toString() ?? 'N/A'}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Status: ${loan['status'] ?? 'N/A'}'),
+                                  Text(
+                                    'Repaid: UGX ${loan['repaidAmount']?.toString() ?? '0'}',
+                                  ),
+                                  Text(
+                                    'Applied on: ${loan['applicationDate'] != null ? DateFormat('yyyy-MM-dd').format(loan['applicationDate'].toDate()) : 'N/A'}',
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                          );
+                        },
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

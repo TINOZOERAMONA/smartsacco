@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:smartsacco/pages/admin/dashboard_page.dart';
+import 'package:smartsacco/pages/admin/member_page.dart';
+import 'package:smartsacco/pages/admin/membersDetails.dart';
 import 'package:smartsacco/pages/forgotpassword.dart';
 import 'package:smartsacco/pages/home_page.dart';
 import 'package:smartsacco/pages/login.dart';
@@ -17,18 +20,25 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setupLogging();
-  final d = DefaultFirebaseOptions.currentPlatform;
+
+  try {
+    setupLogging();
+
     await Firebase.initializeApp(
       options: kIsWeb
           ? DefaultFirebaseOptions.web
           : DefaultFirebaseOptions.currentPlatform,
     );
-  runApp(const SaccoDashboardApp());
+
+    runApp(const SaccoDashboardApp());
+  } catch (e, stack) {
+    print("🔥 Error during app startup: $e");
+    print("📌 Stack trace: $stack");
+  }
 }
+
 
 class SaccoDashboardApp extends StatefulWidget {
   const SaccoDashboardApp({super.key});
@@ -107,7 +117,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
       navigatorKey: navigatorKey,
       title: 'SACCO SHIELD',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/splash',
+      initialRoute: '/admin-dashboard',
       routes: {
         '/splash': (context) => SplashPage(),
         '/home': (context) => const HomePage(),

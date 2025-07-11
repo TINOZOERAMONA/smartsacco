@@ -9,6 +9,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:smartsacco/pages/admin/pending_loan_page.dart';
+
 import 'active_loan_page.dart';
 
 class OverviewPage extends StatefulWidget {
@@ -19,12 +21,18 @@ class OverviewPage extends StatefulWidget {
 }
 
 class OverviewPageState extends State<OverviewPage> {
+  // Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // State variables
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoadingTransactions = true;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+
+  // ------------------
+  // Lifecycle Methods
+  // ------------------
 
   @override
   void initState() {
@@ -37,6 +45,10 @@ class OverviewPageState extends State<OverviewPage> {
     _searchController.dispose();
     super.dispose();
   }
+
+  // ------------------------
+  // Data Loading & Helpers
+  // ------------------------
 
   Future<void> _loadRecentTransactions() async {
     setState(() {
@@ -121,9 +133,8 @@ class OverviewPageState extends State<OverviewPage> {
       await Share.shareXFiles([XFile(path)], text: 'Exported Transactions CSV');
     } catch (e) {
       if (kDebugMode) print('Error exporting CSV: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error exporting CSV: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error exporting CSV: $e')));
     }
   }
 
@@ -144,6 +155,10 @@ class OverviewPageState extends State<OverviewPage> {
         break;
     }
   }
+
+  // ------------------
+  // UI Builders
+  // ------------------
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +238,8 @@ class OverviewPageState extends State<OverviewPage> {
                         valueFuture: _getPendingLoansCount(),
                         theme: theme,
                         isDark: isDark,
-                        onTap: () => _navigateToPage('loan_approval'),
+                        onTap: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const PendingLoansPage())),
                       ),
                       _buildSummaryCard(
                         title: 'Current Balance',
@@ -265,9 +281,8 @@ class OverviewPageState extends State<OverviewPage> {
     return GestureDetector(
       onTap: onTap,
       child: MouseRegion(
-        cursor: onTap != null
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.basic,
+        cursor:
+            onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -426,7 +441,8 @@ class OverviewPageState extends State<OverviewPage> {
     );
   }
 
-  Widget _buildRecentTransactions(ThemeData theme, bool isDark, double height) {
+  Widget _buildRecentTransactions(
+      ThemeData theme, bool isDark, double height) {
     final cardColor = isDark ? Colors.grey[800] : Colors.white;
 
     if (_isLoadingTransactions) {
@@ -517,6 +533,10 @@ class OverviewPageState extends State<OverviewPage> {
     );
   }
 
+  // -----------------------
+  // Async Data Fetchers
+  // -----------------------
+
   Future<String> _getCurrentBalance() async {
     try {
       final snapshot = await _firestore.collection('momo_callbacks').get();
@@ -536,15 +556,13 @@ class OverviewPageState extends State<OverviewPage> {
         }
       }
 
-      double currentBalance = totalDeposits - totalWithdrawals;
+      final currentBalance = totalDeposits - totalWithdrawals;
 
-      final formattedBalance = NumberFormat.currency(
+      return NumberFormat.currency(
         locale: 'en_UG',
         symbol: 'UGX',
         decimalDigits: 2,
       ).format(currentBalance);
-
-      return formattedBalance;
     } catch (e) {
       debugPrint('Error calculating current balance: $e');
       return 'Error';
@@ -552,18 +570,24 @@ class OverviewPageState extends State<OverviewPage> {
   }
 
   Future<String> _getTotalMembersCount() async {
-    final snapshot = await _firestore.collection('users').get();
-    return snapshot.size.toString();
+    try {
+      final snapshot = await _firestore.collection('users').get();
+      return snapshot.size.toString();
+    } catch (e) {
+      debugPrint('Error fetching total members count: $e');
+      return '0';
+    }
   }
 
-  // IMPORTANT: Use collectionGroup to query loans across all users' loans subcollections
   Future<String> _getActiveLoansCount() async {
     try {
-      final snapshot = await _firestore
-          .collectionGroup('loans')
-          .where('status', isEqualTo: 'approved')
-          .get();
-      return snapshot.size.toString();
+      final snapshot = await _firestore.collectionGroup('loans').get();
+      final approvedLoans = snapshot.docs.where((doc) {
+        final status = (doc['status'] ?? '').toString().toLowerCase().trim();
+        return status == 'approved';
+      }).toList();
+
+      return approvedLoans.length.toString();
     } catch (e) {
       debugPrint('Error fetching active loans count: $e');
       return '0';
@@ -571,17 +595,21 @@ class OverviewPageState extends State<OverviewPage> {
   }
 
   Future<String> _getPendingLoansCount() async {
-    try {
-      final snapshot = await _firestore
-          .collectionGroup('loans')
-          .where('status', isEqualTo: 'pending')
-          .get();
-      return snapshot.size.toString();
-    } catch (e) {
-      debugPrint('Error fetching pending loans count: $e');
-      return '0';
-    }
+  try {
+    final snapshot = await _firestore.collectionGroup('loans').get();
+
+    final pendingLoans = snapshot.docs.where((doc) {
+      final status = (doc['status'] ?? '').toString().toLowerCase().trim();
+      return status == 'pending';  // Check this matches your detail page filter exactly
+    }).toList();
+
+    return pendingLoans.length.toString();
+  } catch (e) {
+    debugPrint('Error fetching pending loans count: $e');
+    return '0';
   }
+}
+
 
   Future<Map<String, int>> _getLoanStats() async {
     try {

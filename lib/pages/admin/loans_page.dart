@@ -12,6 +12,28 @@ class LoanPage extends StatefulWidget {
 
 class _LoanPageState extends State<LoanPage> {
   String selectedFilter = 'All'; // All, Pending Approval, Approved, Rejected
+  int activeLoanCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _getActiveLoanCount(); // fetch on load
+  }
+
+  Future<void> _getActiveLoanCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Approved') // Assuming 'Approved' is active
+          .get();
+
+      setState(() {
+        activeLoanCount = snapshot.size;
+      });
+    } catch (e) {
+      print('Error fetching active loans: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +41,15 @@ class _LoanPageState extends State<LoanPage> {
       appBar: AppBar(title: const Text('Loan Applications')),
       body: Column(
         children: [
+          const SizedBox(height: 10),
+          Text(
+            'Total Active Loans: $activeLoanCount',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: DropdownButton<String>(
@@ -40,7 +71,9 @@ class _LoanPageState extends State<LoanPage> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collectionGroup('loans').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collectionGroup('loans')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -53,11 +86,12 @@ class _LoanPageState extends State<LoanPage> {
                 var loans = snapshot.data!.docs;
 
                 if (selectedFilter != 'All') {
-                  loans = loans.where((doc) =>
-                      (doc['status'] ?? '').toString() == selectedFilter).toList();
+                  loans = loans
+                      .where((doc) =>
+                          (doc['status'] ?? '').toString() == selectedFilter)
+                      .toList();
                 }
 
-                // Group by status for display as sections (optional)
                 Map<String, List<QueryDocumentSnapshot>> grouped = {};
                 for (var loan in loans) {
                   final status = (loan['status'] ?? 'Unknown').toString();
@@ -75,7 +109,8 @@ class _LoanPageState extends State<LoanPage> {
                         final purpose = data['purpose'];
                         final status = data['status'];
                         final userId = loan.reference.parent.parent?.id ?? 'Unknown';
-                        final applicationDate = (data['applicationDate'] as Timestamp?)?.toDate();
+                        final applicationDate =
+                            (data['applicationDate'] as Timestamp?)?.toDate();
 
                         return ListTile(
                           title: Text('UGX $amount - $purpose'),
