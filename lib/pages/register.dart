@@ -1,7 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:smartsacco/services/auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:smartsacco/pages/emailverification_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,8 +24,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   bool _isRegistering = false;
   bool _isPasswordObscured = true;
 
-
-  final FirebaseAuthService _authService = FirebaseAuthService();
+ 
 
   @override
   void dispose() {
@@ -32,8 +34,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-
-  void _register() async {
+  Future<void> _register() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,81 +46,83 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
       return;
     }
 
-    setState(() {
-      _isRegistering = true;
-    });
-
     try {
-      String email = _emailController.text.trim();
-      String password = _passwordController.text;
-      String fullName = _fullNameController.text.trim();
+      setState(() => _isRegistering = true);
 
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
 
-      User? user = await _authService.registerWithEmailAndPassword(email, password);
+      if (userCredential.user != null) {
+        final user = userCredential.user!;
+        await user.updateDisplayName(_fullNameController.text.trim());
 
-      if (!mounted) return;
+        // ✅ Save user data to Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullName': _fullNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'pin': _passwordController.text.trim(),
+          'role': _selectedRole.toLowerCase(),
+          'registrationMethod': 'form',
+          'createdAt': Timestamp.now(),
+        });
 
-      if (user != null) {
+        _log.info(
+          'Successfully registered User: ${_fullNameController.text.trim()} as $_selectedRole with UID: ${user.uid}',
+        );
+      }
 
-        _log.info('Successfully registered User: $fullName as $_selectedRole with UID: ${user.uid}');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registration successful!"),
-            backgroundColor: Colors.green,
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EmailVerificationScreen(
+              userEmail: _emailController.text.trim(),
+            ),
           ),
         );
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'weak-password':
+          errorMessage = 'The password provided is too weak.';
+          break;
+        case 'email-already-in-use':
+          errorMessage = 'The account already exists for that email.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'The email address is not valid.';
+          break;
+        default:
+          errorMessage = 'Registration failed: ${e.message}';
+      }
 
-
-        try {
-          await user.updateDisplayName(fullName);
-        } catch (e) {
-          _log.warning('Failed to update display name: $e');
-        }
-
-
-        const verificationCode = '123456'; // Mock code
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/verification',
-              (route) => false,
-          arguments: {
-            'code': verificationCode,
-            'role': _selectedRole,
-            'user': user, // ADDED: Pass the user object
-          },
-        );
-      } else {
-        _log.warning('Registration failed for email: $email');
-
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registration failed. Please try again."),
+          SnackBar(
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
-
-      if (!mounted) return;
-
-      _log.warning('Registration error: $e');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Registration error: ${e.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-
       if (mounted) {
-        setState(() {
-          _isRegistering = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An unexpected error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRegistering = false);
       }
     }
-
-
   }
 
   @override
@@ -145,12 +148,12 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                keyboardType: TextInputType.phone,
+                keyboardType: TextInputType.text,
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: 'PIN Password',
+                  labelText: 'Pin Password',
                   border: const OutlineInputBorder(),
-                  helperText: 'PIN must be atleast 4 characters',
+                  helperText: 'Password must be at least 6 digits',
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordObscured
@@ -167,10 +170,10 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                 obscureText: _isPasswordObscured,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a PIN password';
+                    return 'Please enter a pin password';
                   }
-                  if (value.length < 4) {
-                    return 'PIN Password must be at least 4 characters';
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
                   }
                   return null;
                 },
@@ -201,7 +204,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007C91),
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -212,13 +215,13 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                       : "Register SACCO",
                   child: _isRegistering
                       ? const CircularProgressIndicator(
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.white),
-                  )
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        )
                       : const Text(
-                    "Register SACCO",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+                          "Register SACCO",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
                 ),
               ),
             ],
@@ -238,8 +241,17 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
         helperText: helperText,
         border: const OutlineInputBorder(),
       ),
-      validator: (value) =>
-      value == null || value.isEmpty ? 'Please enter $label' : null,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter $label';
+        }
+        if (label == 'Email') {
+          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+            return 'Please enter a valid email address';
+          }
+        }
+        return null;
+      },
     );
   }
 }

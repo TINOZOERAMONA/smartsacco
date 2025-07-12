@@ -49,5 +49,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>CFBundleURLName</key>
+        <string>smartsacco.deeplink</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>smartsacco</string>
+        </array>
 </dict>
 </plist>

@@ -1,14 +1,24 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:logging/logging.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+
+
+
+
+
+
+final _logger = Logger('VoiceRegisterPage');
 class VoiceRegisterPage extends StatefulWidget {
   const VoiceRegisterPage({super.key});
 
   @override
-  _VoiceRegisterPageState createState() => _VoiceRegisterPageState();
+  State<VoiceRegisterPage> createState() => _VoiceRegisterPageState();
 }
 
 class _VoiceRegisterPageState extends State<VoiceRegisterPage>
@@ -144,7 +154,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         }
       });
     } catch (e) {
-      print("TTS Error: $e");
+      _logger.warning("TTS Error: $e");
       Future.delayed(Duration(seconds: 2), () {
         if (mounted) {
           _startListening();
@@ -157,12 +167,12 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
     try {
       await speech.stop();
     } catch (e) {
-      print("Error stopping speech: $e");
+      _logger.warning("Error stopping speech: $e");
     }
 
     bool available = await speech.initialize(
       onStatus: (val) {
-        print("Speech status: $val");
+        _logger.info("Speech status: $val");
         if (mounted) {
           setState(() {
             isListening = val == 'listening';
@@ -178,7 +188,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         }
       },
       onError: (val) {
-        print("Speech error: $val");
+        _logger.warning("Speech error: $val");
         if (mounted) {
           setState(() {
             isListening = false;
@@ -453,7 +463,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       await flutterTts.speak("Creating your account, please wait...");
       
       // Create a temporary password using email and PIN
-      String temporaryPassword = "${pin}${email.substring(0, 2)}Temp123!";
+      String temporaryPassword = "$pin${email.substring(0, 2)}Temp123!";
       
       // Create Firebase Auth user
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(

@@ -1,9 +1,10 @@
-// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+// ignore_for_file: library_private_types_in_public_api, deprecated_member_use, avoid_print
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:logging/logging.dart';
 
 class VoiceWelcomeScreen extends StatefulWidget {
   const VoiceWelcomeScreen({super.key});
@@ -14,6 +15,7 @@ class VoiceWelcomeScreen extends StatefulWidget {
 
 class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     with TickerProviderStateMixin {
+  final Logger _logger = Logger('VoiceWelcomeScreen');
   FlutterTts flutterTts = FlutterTts();
   stt.SpeechToText speech = stt.SpeechToText();
   bool isListening = false;
@@ -41,6 +43,8 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     _requestPermissions();
     _startWelcomeSequence();
   }
+
+
 
   void _initAnimations() {
     _fadeController = AnimationController(
@@ -115,7 +119,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
   }
 
   Future<void> _startListening() async {
-    print("Initializing speech recognition...");
+    _logger.info("Initializing speech recognition...");
     
     // Stop any existing listening session
     if (isListening) {
@@ -124,7 +128,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
 
     bool available = await speech.initialize(
       onStatus: (val) {
-        print("Speech status: $val");
+        _logger.info("Speech status: $val");
         if (mounted) {
           setState(() {
             isListening = val == 'listening';
@@ -136,7 +140,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
         }
       },
       onError: (val) {
-        print("Speech error: $val");
+        _logger.warning("Speech error: $val");
         if (mounted) {
           setState(() {
             isListening = false;
@@ -146,7 +150,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       },
     );
 
-    print("Speech available: $available");
+    _logger.info("Speech available: $available");
     if (available) {
       if (mounted) {
         setState(() {
@@ -369,7 +373,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     });
   }
 
-  void _navigateToMainApp({bool accessibilityMode = true}) {
+  void _navigateToMainApp() {
     print("Navigating to main app - tap detected");
     speech.stop();
     flutterTts.stop();
