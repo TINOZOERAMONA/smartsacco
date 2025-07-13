@@ -137,7 +137,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
-
   csslib:
     dependency: transitive
     description:
@@ -146,22 +145,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
-
   csv:
     dependency: "direct main"
     description:
       name: csv
-
-      sha256: "63ed2871dd6471193dffc52c0e6c76fb86269c00244d244297abbb355c84a86e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.1"
-
       sha256: c6aa2679b2a18cb57652920f674488d89712efaf4d3fdf2e537215b35fc19d6c
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
-
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -246,17 +237,10 @@ packages:
     dependency: transitive
     description:
       name: firebase_core_platform_interface
-
-      sha256: "8bcfad6d7033f5ea951d15b867622a824b13812178bfec0c779b9d81de011bbb"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.4.2"
-
       sha256: "5dbc900677dcbe5873d22ad7fbd64b047750124f1f9b7ebe2a33b9ddccc838eb"
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
-
   firebase_core_web:
     dependency: transitive
     description:
@@ -288,11 +272,7 @@ packages:
       sha256: e1ea59820fd7ac38189f4eeb6e5e81c15b40f3f6edb64ce724222c2a671b67c9
       url: "https://pub.dev"
     source: hosted
-
-    version: "3.10.15"
-
     version: "3.10.16"
-
   fixnum:
     dependency: transitive
     description:
@@ -305,17 +285,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-
-      sha256: "00b74ae680df6b1135bdbea00a7d1fc072a9180b7c3f3702e4b19a9943f5ed7d"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.66.2"
-
       sha256: "577aeac8ca414c25333334d7c4bb246775234c0e44b38b10a82b559dd4d764e7"
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-
   flutter:
     dependency: "direct main"
     description: flutter
@@ -404,7 +377,7 @@ packages:
     source: hosted
     version: "4.1.2"
   intl:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: intl
       sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
@@ -495,17 +468,10 @@ packages:
     dependency: transitive
     description:
       name: mime
-
-      sha256: "801fd0b26f14a4a58ccb09d5892c3fbdeff209594300a542492cf13fba9d247a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.6"
-
       sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-
   path:
     dependency: transitive
     description:
@@ -654,32 +620,18 @@ packages:
     dependency: "direct main"
     description:
       name: share_plus
-
-      sha256: "3ef39599b00059db0990ca2e30fca0a29d8b37aae924d60063f8e0184cf20900"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.2.2"
-
       sha256: b2961506569e28948d75ec346c28775bb111986bb69dc6a20754a457e3d97fa0
       url: "https://pub.dev"
     source: hosted
     version: "11.0.0"
-
   share_plus_platform_interface:
     dependency: transitive
     description:
       name: share_plus_platform_interface
-
-      sha256: "251eb156a8b5fa9ce033747d73535bf53911071f8d3b6f4f0b578505ce0d4496"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.4.0"
-
       sha256: "1032d392bc5d2095a77447a805aa3f804d2ae6a4d5eef5e6ebb3bd94c1bc19ef"
       url: "https://pub.dev"
     source: hosted
     version: "6.0.0"
-
   shared_preferences:
     dependency: "direct main"
     description:
@@ -861,7 +813,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-
   universal_html:
     dependency: "direct main"
     description:
@@ -902,7 +853,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.3.3"
-
   url_launcher_linux:
     dependency: transitive
     description:
@@ -911,7 +861,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
-
   url_launcher_macos:
     dependency: transitive
     description:
@@ -920,7 +869,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
-
   url_launcher_platform_interface:
     dependency: transitive
     description:

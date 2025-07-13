@@ -10,6 +10,7 @@ import 'package:smartsacco/pages/register.dart';
 import 'package:smartsacco/pages/splash_page.dart';
 import 'package:smartsacco/pages/emailverification_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:smartsacco/pages/emailverification_page.dart';
 import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
@@ -118,13 +119,16 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/register': (context) => const RegisterPage(),
 
-        '/verification': (context) => const VerificationPage(),
+        '/verification': (context) => const EmailVerificationScreen(userEmail: userEmail),
         '/dashboard': (context) => const AdminMainPage(),
 
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
+        
+        // FIXED: no parameters passed here!
         '/member-dashboard': (context) => const MemberDashboard(),
+
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
         // Removed '/member_details' from routes because it requires arguments
