@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:smartsacco/pages/admin/dashboard_page.dart';
 import 'package:smartsacco/pages/admin/member_page.dart';
 import 'package:smartsacco/pages/admin/membersDetails.dart';
@@ -9,13 +10,11 @@ import 'package:smartsacco/pages/member_dashboard.dart';
 import 'package:smartsacco/pages/register.dart';
 import 'package:smartsacco/pages/splash_page.dart';
 import 'package:smartsacco/pages/emailverification_page.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:smartsacco/pages/emailverification_page.dart';
-import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
 import 'package:smartsacco/pages/voicelogin.dart';
 import 'package:smartsacco/utils/logger.dart';
+import 'firebase_options.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -111,6 +110,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
       navigatorKey: navigatorKey,
       title: 'SACCO SHIELD',
       theme: ThemeData(primarySwatch: Colors.blue),
+      debugShowCheckedModeBanner: false,
       initialRoute: '/member-dashboard',
       routes: {
         '/splash': (context) => SplashPage(),
@@ -119,19 +119,14 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/register': (context) => const RegisterPage(),
 
-        '/verification': (context) => const EmailVerificationScreen(userEmail: userEmail),
+        // Removed broken const route for verification
         '/dashboard': (context) => const AdminMainPage(),
-
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
-        
-        // FIXED: no parameters passed here!
         '/member-dashboard': (context) => const MemberDashboard(),
-
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
-        // Removed '/member_details' from routes because it requires arguments
       },
       onGenerateRoute: (RouteSettings settings) {
         final args = settings.arguments;
@@ -168,7 +163,6 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
             return null;
         }
       },
-      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -182,7 +176,6 @@ MaterialPageRoute _errorRoute(String message) {
   );
 }
 
-// Add this class to handle deep links manually (for testing)
 class DeepLinkHandler {
   static final DeepLinkHandler _instance = DeepLinkHandler._internal();
   factory DeepLinkHandler() => _instance;
