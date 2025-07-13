@@ -85,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
 
           final anotherRole = doc.data()?['role'];
         // EXISTING: Navigate based on role
-        if (role == 'Admin') {
+        if (role == 'admin') {
           Navigator.pushNamedAndRemoveUntil(
               context, '/admin-dashboard', (route) => false);        
         } else {

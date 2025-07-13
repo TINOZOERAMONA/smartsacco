@@ -236,7 +236,7 @@ class _SplashPageState extends State<SplashPage>
     // TTS completion handler will trigger _startListening()
   }
 
-  void _handleVoiceNavigation() {
+  void _handleVoiceNavigation() async {
     if (mounted) {
       setState(() {
         isListening = false;
@@ -245,9 +245,20 @@ class _SplashPageState extends State<SplashPage>
     
     _pulseController.stop();
     speech.stop();
+
+    setState(() {
+      isSpeaking = true;
+    });
     
-    flutterTts.speak("Navigating you to the home screen!");
-    _navigateToMainApp(accessibilityMode: true);
+    flutterTts.setCompletionHandler(() {
+      if (mounted) {
+        setState(() {
+          isSpeaking = false;
+        });
+        _navigateToMainApp(accessibilityMode: true);
+      }
+    });
+    await flutterTts.speak("Navigating you to the welcome screen.");
   }
 
   void _navigateToMainApp({bool accessibilityMode = false}) {

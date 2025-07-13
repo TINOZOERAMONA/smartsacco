@@ -109,7 +109,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
 
   Future<void> _speakWelcome() async {
     const String welcomeMessage =
-        "Welcome Back again. To register say one and to login say two";
+        "Welcome Back again. To register say one and to login say three";
 
     setState(() {
       isSpeaking = true;
@@ -189,18 +189,18 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       // If we're not awaiting confirmation and haven't heard a valid command
       if (!spokenText.contains('one') && 
           !spokenText.contains('1') && 
-          !spokenText.contains('two') && 
-          !spokenText.contains('2') &&
+          !spokenText.contains('three') && 
+          !spokenText.contains('3') &&
           !spokenText.contains('yes') &&
           !spokenText.contains('no') &&
           retryCount < maxRetries) {
         
         retryCount++;
         String retryMessage = retryCount == 1 
-            ? "I didn't catch that. Please say 'one' to register or 'two' to login."
-            : retryCount == 2 
-                ? "Let's try again. Say 'one' for register or 'two' for login."
-                : "One more time. Say 'one' to register or 'two' to login.";
+            ? "I didn't catch that. Please say 'one' to register or 'three' to login."
+            : retryCount == 3 
+                ? "Let's try again. Say 'one' for register or 'three' for login."
+                : "One more time. Say 'one' to register or 'three' to login.";
         
         _speakAndRetry(retryMessage);
       } else if (retryCount >= maxRetries) {
@@ -271,16 +271,19 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     if (spokenText.contains('one') || spokenText.contains('1')) {
       print("Detected 'one' - requesting confirmation for register");
       _requestConfirmation("register", "one");
-    } else if (spokenText.contains('two') || spokenText.contains('2')) {
-      print("Detected 'two' - requesting confirmation for login");
-      _requestConfirmation("login", "two");
+    } else if (spokenText.contains('three') || spokenText.contains('3')) {
+      print("Detected 'three' - requesting confirmation for login");
+      _requestConfirmation("login", "three");
     } else {
       print("Unrecognized command: $spokenText");
-      _speakAndRetry("Navigating you back to home screen. Please say 'one' to register or 'two' to login.");
+      _speakAndRetry("I didn't catch that Please say 'one' to register or 'three' to login.");
     }
   }
 
-  void _requestConfirmation(String action, String number) {
+  void _requestConfirmation(String action, String number) async {
+    print("Action: $action");
+    print("Number: $number");
+
     setState(() {
       awaitingConfirmation = true;
       pendingAction = action;
@@ -288,17 +291,19 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       retryCount = 0;
       spokenText = ""; // Clear previous spoken text
     });
-    
+
     _pulseController.stop();
-    speech.stop();
-    
-    String confirmationMessage = "Did you say $number to $action? Say 'yes' to confirm or 'no' to cancel.";
-    
+    await speech.stop();
+
+   String confirmationMessage = "Did you say $number to $action? Say yes to confirm or no to cancel.";
+
     setState(() {
       isSpeaking = true;
     });
-    
-    flutterTts.speak(confirmationMessage);
+
+    // Ensure TTS is reset before speaking
+    await flutterTts.stop();
+    await flutterTts.speak(confirmationMessage);
   }
 
   void _handleConfirmation() {
@@ -329,7 +334,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
   }
 
   Future<void> _speakWelcomeAfterCancel() async {
-    await flutterTts.speak("Navigating you back to home screen. Welcome Back again. To register say one and to login say two");
+    await flutterTts.speak("Navigating you back to home screen. Welcome Back again. To register say one and to login say three");
   }
 
   void _executeAction() {
@@ -412,7 +417,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     if (awaitingConfirmation) {
       return 'Say "yes" to confirm or "no" to cancel';
     } else {
-      return 'Say "one" for register or "two" for login';
+      return 'Say "one" for register or "three" for login';
     }
   }
 

@@ -36,6 +36,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   // Registration data
   String fullName = "";
   String email = "";
+  String phoneNumber = "";
   String pin = "";
   String confirmPin = "";
   String role = "";
@@ -47,7 +48,8 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   
   List<String> steps = [
     "full_name",
-    "email", 
+    "email",
+    "phone",
     "pin",
     "confirm_pin",
     "role",
@@ -112,6 +114,9 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         case "email":
           message = "Thank you. Please confirm, did you say your email is $tempValue? Say yes to confirm or no to try again.";
           break;
+        case "phone":
+          message = "Thank you. Please confirm, did you say ${_speakDigits(tempValue)}? Say yes to confirm or no to try again.";
+          break;
         case "pin":
           message = "Thank you. Please confirm, did you say your PIN is $tempValue? Say yes to confirm or no to try again.";
           break;
@@ -125,10 +130,13 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
     } else {
       switch (steps[currentStep]) {
         case "full_name":
-          message = "Welcome to registration! Please say your full name clearly.";
+          message = "Welcome to registration! Please spell your full name one letter at a time ao i can get it clearly.";
           break;
         case "email":
           message = "Great! Now please say your email address. Speak slowly and clearly. For example, say 'john at gmail dot com' for john@gmail.com";
+          break;
+        case "phone":
+          message = "Now please say your phone number digit by digit. For example, say 'zero seven six zero three four five six seven eight' for 0760345678.";
           break;
         case "pin":
           message = "Now please say your 4-digit PIN. This will be used for quick access.";
@@ -140,7 +148,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           message = "Finally, please say your role. Say 'member' if you are a member, or say 'admin' if you are an administrator.";
           break;
         case "final_confirm":
-          message = "Let me read back all your details for final confirmation. Full name: $fullName. Email: $email. PIN: $pin. Role: $role. Say 'yes' to confirm everything, or say 'no' to make changes.";
+          message = "Let me read back all your details for final confirmation. Full name: $fullName. Email: $email.Phone number: ${_speakDigits(phoneNumber)} PIN: $pin. Role: $role. Say 'yes' to confirm everything, or say 'no' to make changes.";
           break;
       }
     }
@@ -205,7 +213,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           spokenText = "";
         });
       }
-
+      
       speech.listen(
         onResult: (val) {
           if (mounted) {
@@ -219,8 +227,8 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
             }
           }
         },
-        listenFor: Duration(seconds: 10),
-        pauseFor: Duration(seconds: 3),
+        listenFor: Duration(seconds: 20),
+        pauseFor: Duration(seconds: 8),
         partialResults: true,
       );
     } else {
@@ -243,6 +251,9 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         case "email":
           _processEmail(input);
           break;
+        case "phone":
+          _processPhone(input);
+          break;
         case "pin":
           _processPin(input);
           break;
@@ -260,16 +271,43 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   }
 
   void _processFullName(String input) {
-    if (input.trim().isNotEmpty) {
-      tempValue = input.trim();
+    String formatted = _processSpokenSpelling(input);
+
+    if (formatted.length >= 3) {
+      tempValue = formatted;
+
       setState(() {
         isConfirming = true;
       });
+
       _speakCurrentStep();
     } else {
-      _askAgain("I didn't catch your name. Please say your full name again.");
+      _askAgain("I couldn't understand your name. Please spell your full name again, and say 'space' between names.");
     }
   }
+
+  String _processSpokenSpelling(String input) {
+    String cleaned = input.toLowerCase()
+      .replaceAll('space', '|')                // spoken "space"
+      .replaceAll(RegExp(r'[^a-z| ]'), '')     // allow letters, pipes, and spaces
+      .replaceAll(RegExp(r'\s+'), ' ')         // collapse extra spaces
+      .trim();
+
+    List<String> nameParts = cleaned.split('|');
+
+    List<String> combinedNames = nameParts.map((part) {
+      String combined = part.replaceAll(' ', ''); // remove intra-name spaces
+      if (combined.isEmpty) return '';
+      return combined[0].toUpperCase() + combined.substring(1);
+    }).toList();
+
+    return combinedNames.join(' ');
+  }
+
+
+  
+  
+
 
   void _processEmail(String input) {
     String cleanInput = _convertSpokenEmailToText(input);
@@ -285,21 +323,34 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
     }
   }
 
-  String _convertSpokenEmailToText(String spokenEmail) {
-    String converted = spokenEmail.toLowerCase().trim();
-    
-    converted = converted.replaceAll(' at ', '@');
-    converted = converted.replaceAll(' @ ', '@');
+  String _convertSpokenEmailToText(String input) {
+    String converted = input.toLowerCase().trim();
+
+    // Replace common spoken symbols
     converted = converted.replaceAll(RegExp(r'\bat\b'), '@');
-    
-    converted = converted.replaceAll(' dot ', '.');
-    converted = converted.replaceAll(' . ', '.');
     converted = converted.replaceAll(RegExp(r'\bdot\b'), '.');
-    
+
+    // Remove all spaces to combine the spelled-out characters
     converted = converted.replaceAll(RegExp(r'\s+'), '');
-    
+
     return converted;
   }
+
+
+  void _processPhone(String input) {
+    String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length >= 9 && digits.length <= 12) {
+      tempValue = digits;
+      setState(() {
+        isConfirming = true;
+      });
+      _speakCurrentStep();
+    } else {
+      _askAgain("That doesn't seem like a valid phone number. Please say your phone number digit by digit.");
+    }
+  }
+
 
   void _processPin(String input) {
     String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
@@ -356,6 +407,9 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         case "email":
           email = tempValue;
           break;
+        case "phone":
+          phoneNumber = tempValue;
+          break;
         case "pin":
           pin = tempValue;
           break;
@@ -404,7 +458,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   }
 
   void _handleFinalConfirmationRejection() {
-    String message = "Which detail would you like to change? Say 'one' to re-enter your full name, 'two' to re-enter your email, 'three' to re-enter your PIN, or 'four' to re-enter your role.";
+    String message = "Which detail would you like to change? Say 'one' to re-enter your full name, 'three' to re-enter your email,'four' to re-enter your Phone, 'five' to re-enter your PIN, or 'six' to re-enter your role.";
     
     flutterTts.speak(message);
     
@@ -421,6 +475,8 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         return "full name";
       case "email":
         return "email address";
+      case "phone":
+        return "phone number";
       case "pin":
         return "PIN";
       case "confirm_pin":
@@ -441,6 +497,11 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       }
     });
   }
+
+  String _speakDigits(String number) {
+    return number.split('').join(' ');
+  }
+
 
   void _speakError(String message) {
     flutterTts.speak(message);
@@ -478,8 +539,9 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'fullName': fullName,
         'email': email,
+        'phoneNumber': phoneNumber,
         'role': role,
-        'pin': pin, // Note: In production, hash this PIN for security
+        'pin': pin, 
         'createdAt': FieldValue.serverTimestamp(),
         'registrationMethod': 'voice',
         'uid': userCredential.user?.uid,
@@ -488,10 +550,10 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       // Success message
       await flutterTts.speak("Registration successful! Your account has been created. Welcome to SmartSacco, $fullName!");
       
-      // Navigate to home or login page
+      // Navigate to dashboard page
       Future.delayed(Duration(seconds: 4), () {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushReplacementNamed(context, '/blindmember');
         }
       });
 
@@ -568,6 +630,8 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
         return "Say your full name";
       case "email":
         return "Say your email address";
+      case "phone":
+        return "Say your phone number";
       case "pin":
         return "Say your 4-digit PIN";
       case "confirm_pin":

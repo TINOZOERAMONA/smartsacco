@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smartsacco/pages/admin/dashboard_page.dart';
 import 'package:smartsacco/pages/admin/member_page.dart';
 import 'package:smartsacco/pages/admin/membersDetails.dart';
+import 'package:smartsacco/pages/blinddashboard.dart';
 import 'package:smartsacco/pages/forgotpassword.dart';
 import 'package:smartsacco/pages/home_page.dart';
 import 'package:smartsacco/pages/login.dart';
@@ -18,6 +19,7 @@ import 'package:smartsacco/utils/logger.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+
 
 
 
@@ -126,6 +128,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
         '/member_details': (context) => const MemberDetailsPage(),
+        '/blindmember': (context) => const VoiceMemberDashboard(),
 
       },
       // Handle routes that need parameters
