@@ -11,47 +11,61 @@ class MembersPage extends StatefulWidget {
 
 class _MembersPageState extends State<MembersPage> {
   late Future<List<Map<String, dynamic>>> _membersFuture;
-  double _totalActiveLoans = 0.0;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  int _activeMemberCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadMembers();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMembers() async {
     _membersFuture = _fetchMembers();
     final members = await _membersFuture;
-    double total = 0.0;
+    int count = 0;
+    
     for (var member in members) {
-      total += (member['totalLoan'] ?? 0);
+      if ((member['totalLoan'] ?? 0) > 0) {
+        count++;
+      }
     }
+    
     setState(() {
-      _totalActiveLoans = total;
+      _activeMemberCount = count;
     });
   }
 
   Future<List<Map<String, dynamic>>> _fetchMembers() async {
-    final usersSnapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+    final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
+    final loansSnapshot = await FirebaseFirestore.instance.collection('loans').get();
 
-    final loansSnapshot =
-        await FirebaseFirestore.instance.collection('loans').get();
-
-    // Map of userId to total approved (and unpaid) loan amount
     final Map<String, double> totalApprovedLoans = {};
+    final Map<String, int> loanCounts = {};
 
     for (var loanDoc in loansSnapshot.docs) {
       final data = loanDoc.data();
       final userId = data['userId'];
       final status = data['status']?.toString().toLowerCase() ?? '';
-      final remainingRaw = data['remainingBalance'];
-
-      final remaining = (remainingRaw is num) ? remainingRaw.toDouble() : 0.0;
+      final remaining = (data['remainingBalance'] is num) 
+          ? data['remainingBalance'].toDouble() 
+          : 0.0;
 
       if (status == 'approved' && remaining > 0) {
-        totalApprovedLoans[userId] =
-            (totalApprovedLoans[userId] ?? 0) + remaining;
+        totalApprovedLoans[userId] = (totalApprovedLoans[userId] ?? 0) + remaining;
+        loanCounts[userId] = (loanCounts[userId] ?? 0) + 1;
       }
     }
 
@@ -63,147 +77,395 @@ class _MembersPageState extends State<MembersPage> {
         'id': id,
         'fullName': data['fullName'] ?? 'No Name',
         'email': data['email'] ?? 'No Email',
+        'phone': data['phone'] ?? 'N/A',
+        'joinDate': data['joinDate']?.toDate(),
         'totalLoan': totalApprovedLoans[id] ?? 0.0,
+        'loanCount': loanCounts[id] ?? 0,
+        'profileImage': data['profileImage'],
       };
     }).toList();
   }
 
-  void _showActiveLoanDetails(BuildContext context, List<Map<String, dynamic>> members) {
-    final activeMembers = members.where((m) => (m['totalLoan'] ?? 0) > 0).toList();
+  Widget _buildMemberCard(Map<String, dynamic> member) {
+    final hasLoans = (member['totalLoan'] ?? 0) > 0;
+    final joinDate = member['joinDate'] as DateTime?;
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToMemberDetails(member['id']),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.blue.shade100,
+                    backgroundImage: member['profileImage'] != null 
+                        ? NetworkImage(member['profileImage']) 
+                        : null,
+                    child: member['profileImage'] == null
+                        ? Text(member['fullName'][0].toUpperCase())
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          member['fullName'],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          member['email'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasLoans) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${member['loanCount']} loan${member['loanCount'] > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildDetailRow('Phone', member['phone']),
+              if (joinDate != null)
+                _buildDetailRow('Member since', DateFormat.yMMMd().format(joinDate)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToMemberDetails(String userId) {
+    Navigator.pushNamed(
+      context,
+      '/member_details',
+      arguments: {'userId': userId},
+    );
+  }
+
+  Future<void> _refreshData() async {
+    setState(() {
+      _membersFuture = _fetchMembers();
+    });
+    final members = await _membersFuture;
+    int count = 0;
+    
+    for (var member in members) {
+      if ((member['totalLoan'] ?? 0) > 0) {
+        count++;
+      }
+    }
+    
+    setState(() {
+      _activeMemberCount = count;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Team Members'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshData,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Search members',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          _buildSummaryCard(context),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _membersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Failed to load members',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snapshot.error.toString(),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _refreshData,
+                          child: const Text('Try Again'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                final members = snapshot.data!;
+                final filteredMembers = members.where((member) {
+                  return member['fullName'].toString().toLowerCase().contains(_searchQuery) ||
+                      member['email'].toString().toLowerCase().contains(_searchQuery) ||
+                      member['phone'].toString().toLowerCase().contains(_searchQuery);
+                }).toList();
+                
+                if (filteredMembers.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.people_alt_outlined, size: 48, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No members registered'
+                              : 'No matching members found',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                return RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    itemCount: filteredMembers.length,
+                    itemBuilder: (context, index) => 
+                        _buildMemberCard(filteredMembers[index]),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Center(
+                child: _buildSummaryItem(
+                  icon: Icons.people,
+                  value: _activeMemberCount.toString(),
+                  label: 'Active Members',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => _showActiveLoanDetails(context),
+                child: const Text('View active members'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem({required IconData icon, required String value, required String label}) {
+    return Column(
+      children: [
+        Icon(icon, size: 36, color: Colors.blue),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showActiveLoanDetails(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Text(
-              'Active Team Members',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: activeMembers.length,
-                itemBuilder: (context, index) {
-                  final member = activeMembers[index];
-                  return ListTile(
-                    title: Text(member['fullName']),
-                    subtitle: Text(member['email']),
-                    trailing: Text(
-                      NumberFormat.currency(locale: 'en_UG', symbol: 'UGX')
-                          .format(member['totalLoan']),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/member_details',
-                        arguments: {'userId': member['id']},
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Registered Members')),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _membersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final members = snapshot.data!;
-          if (members.isEmpty) {
-            return const Center(child: Text('No members registered.'));
-          }
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: GestureDetector(
-                  onTap: () => _showActiveLoanDetails(context, members),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.bar_chart, color: Colors.blue),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Active Team: ${NumberFormat.currency(locale: 'en_UG',).format(_totalActiveLoans)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: members.length,
-                  itemBuilder: (context, index) {
-                    final member = members[index];
-                    return Card(
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        title: Text(member['fullName']),
-                        subtitle: Text('Email: ${member['email']}'),
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/member_details',
-                            arguments: {'userId': member['id']},
-                          );
-                        },
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.5,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) {
+          return FutureBuilder<List<Map<String, dynamic>>>(
+            future: _membersFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final members = snapshot.data ?? [];
+              final activeMembers = members.where((m) => (m['totalLoan'] ?? 0) > 0).toList();
+              
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                    );
-                  },
+                    ),
+                    const Text(
+                      'Active Team Members',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: activeMembers.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.credit_card_off, size: 48, color: Colors.grey),
+                                  const SizedBox(height: 16),
+                                  const Text('No active loans'),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: scrollController,
+                              itemCount: activeMembers.length,
+                              itemBuilder: (context, index) {
+                                final member = activeMembers[index];
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    child: Text(member['fullName'][0].toUpperCase()),
+                                  ),
+                                  title: Text(member['fullName']),
+                                  subtitle: Text(member['email']),
+                                  trailing: Text(
+                                    '${member['loanCount']} loan${member['loanCount'] > 1 ? 's' : ''}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    _navigateToMemberDetails(member['id']);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
           );
         },
       ),
