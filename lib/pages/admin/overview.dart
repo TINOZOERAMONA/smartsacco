@@ -44,24 +44,27 @@ class OverviewPageState extends State<OverviewPage> {
     setState(() {
       _isLoadingTransactions = true;
     });
+
     try {
       final snapshot = await _firestore
-          .collection('momo_callbacks')
-          .orderBy('transactionId', descending: true)
+          .collectionGroup('transactions')
+          .orderBy('date', descending: true)
           .limit(50)
           .get();
 
       _transactions = snapshot.docs.map((doc) {
         final data = doc.data();
         return {
-          'description': data['description'] ?? '',
+          'description': '${data['type']} via ${data['method']}',
           'date': data['date'],
           'amount': (data['amount'] ?? 0).toDouble(),
-          'type': data['type'] ?? '',
+          'type': (data['type'] ?? '').toString().toLowerCase(),
+          'status': data['status'] ?? '',
+          'fullName': (data['fullName'] ?? '').toString().toLowerCase(),
         };
-      }).toList();
+      }).where((tx) => tx['status'] == 'Completed').toList();
     } catch (e) {
-      debugPrint('Error fetching transactions: $e');
+      debugPrint('Error fetching recent transactions: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading transactions: $e')),
@@ -79,7 +82,10 @@ class OverviewPageState extends State<OverviewPage> {
     return _transactions.where((tx) {
       final desc = (tx['description'] ?? '').toLowerCase();
       final type = (tx['type'] ?? '').toLowerCase();
-      return desc.contains(_searchQuery) || type.contains(_searchQuery);
+      final fullName = (tx['fullName'] ?? '').toLowerCase();
+      return desc.contains(_searchQuery) ||
+          type.contains(_searchQuery) ||
+          fullName.contains(_searchQuery);
     }).toList();
   }
 
@@ -215,7 +221,8 @@ class OverviewPageState extends State<OverviewPage> {
                         theme: theme,
                         isDark: isDark,
                         onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const ActiveLoansPage())),
+                            MaterialPageRoute(
+                                builder: (_) => const ActiveLoansPage())),
                       ),
                       _buildSummaryCard(
                         title: 'Pending Loans',
@@ -225,7 +232,8 @@ class OverviewPageState extends State<OverviewPage> {
                         theme: theme,
                         isDark: isDark,
                         onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const PendingLoansPage())),
+                            MaterialPageRoute(
+                                builder: (_) => const PendingLoansPage())),
                       ),
                       _buildSummaryCard(
                         title: 'Current Balance',
@@ -350,9 +358,9 @@ class OverviewPageState extends State<OverviewPage> {
                   }
 
                   final stats = snapshot.data!;
-                  final approved = stats['approved'] ?? 0;
-                  final pending = stats['pending approval'] ?? 0;
-                  final rejected = stats['rejected'] ?? 0;
+                  final approved = stats['Approved'] ?? 0;
+                  final pending = stats['Pending Approval'] ?? 0;
+                  final rejected = stats['Rejected'] ?? 0;
 
                   final total = approved + pending + rejected;
                   if (total == 0) {
@@ -561,55 +569,62 @@ class OverviewPageState extends State<OverviewPage> {
     }
   }
 
+  // Optimized query - only fetch loans where status == 'approved'
   Future<String> _getActiveLoansCount() async {
     try {
-      final snapshot = await _firestore.collectionGroup('loans').get();
-      final approvedLoans = snapshot.docs.where((doc) {
-        final status = (doc['status'] ?? '').toString().toLowerCase().trim();
-        return status == 'approved';
-      }).toList();
+      final snapshot = await _firestore
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Approved')
+          .get();
 
-      return approvedLoans.length.toString();
+      return snapshot.size.toString();
     } catch (e) {
       debugPrint('Error fetching active loans count: $e');
       return '0';
     }
   }
 
+  // Optimized query - only fetch loans where status == 'pending approval'
   Future<String> _getPendingLoansCount() async {
     try {
-      final snapshot = await _firestore.collectionGroup('loans').get();
+      final snapshot = await _firestore
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Pending Approval')
+          .get();
 
-      final pendingLoans = snapshot.docs.where((doc) {
-        final status = (doc['status'] ?? '').toString().toLowerCase().trim();
-        return status == 'pending approval';
-      }).toList();
-
-      return pendingLoans.length.toString();
+      return snapshot.size.toString();
     } catch (e) {
       debugPrint('Error fetching pending loans count: $e');
       return '0';
     }
   }
 
+  // Optimized _getLoanStats() using Firestore queries to count by status
   Future<Map<String, int>> _getLoanStats() async {
     try {
-      final snapshot = await _firestore.collectionGroup('loans').get();
-      int approved = 0, pending = 0, rejected = 0;
-      for (var doc in snapshot.docs) {
-        final status = (doc.data()['status'] ?? '').toString().toLowerCase().trim();
-        if (status == 'approved') {
-          approved++;
-        } else if (status == 'pending approval') {
-          pending++;
-        } else if (status == 'rejected') {
-          rejected++;
-        }
-      }
-      return {'approved': approved, 'pending approval': pending, 'rejected': rejected};
+      final approvedSnapshot = await _firestore
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Approved')
+          .get();
+
+      final pendingSnapshot = await _firestore
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Pending Approval')
+          .get();
+
+      final rejectedSnapshot = await _firestore
+          .collectionGroup('loans')
+          .where('status', isEqualTo: 'Rejected')
+          .get();
+
+      return {
+        'Approved': approvedSnapshot.size,
+        'Pending Approval': pendingSnapshot.size,
+        'Rejected': rejectedSnapshot.size,
+      };
     } catch (e) {
       debugPrint('Error fetching loan stats: $e');
-      return {'approved': 0, 'pending approval': 0, 'rejected': 0};
+      return {'Approved': 0, 'Pending Approval': 0, 'Rejected': 0};
     }
   }
 }

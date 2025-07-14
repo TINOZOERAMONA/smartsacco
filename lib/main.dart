@@ -110,7 +110,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
       navigatorKey: navigatorKey,
       title: 'SACCO SHIELD',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/admin-dashboard',
+      initialRoute: '/splash',
       routes: {
         '/splash': (context) => SplashPage(),
         '/home': (context) => const HomePage(),
@@ -151,7 +151,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
             final userId = args?['userId'] as String?;
             if (userId != null) {
               return MaterialPageRoute(
-                builder: (context) => MemberDetailsPage(userId: userId),
+                builder: (context) => MemberLoanDetailsPage(userId: userId),
               );
             }
             return _errorRoute("Missing userId for member details");

@@ -47,7 +47,7 @@ class PendingLoansPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collectionGroup('loans')
-            .where('status', isEqualTo: 'pending approval')
+            .where('status', isEqualTo: 'Pending Approval') // Correct case here
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
