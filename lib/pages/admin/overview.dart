@@ -21,18 +21,12 @@ class OverviewPage extends StatefulWidget {
 }
 
 class OverviewPageState extends State<OverviewPage> {
-  // Firestore instance
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // State variables
   List<Map<String, dynamic>> _transactions = [];
   bool _isLoadingTransactions = true;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-
-  // ------------------
-  // Lifecycle Methods
-  // ------------------
 
   @override
   void initState() {
@@ -45,10 +39,6 @@ class OverviewPageState extends State<OverviewPage> {
     _searchController.dispose();
     super.dispose();
   }
-
-  // ------------------------
-  // Data Loading & Helpers
-  // ------------------------
 
   Future<void> _loadRecentTransactions() async {
     setState(() {
@@ -155,10 +145,6 @@ class OverviewPageState extends State<OverviewPage> {
         break;
     }
   }
-
-  // ------------------
-  // UI Builders
-  // ------------------
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +351,7 @@ class OverviewPageState extends State<OverviewPage> {
 
                   final stats = snapshot.data!;
                   final approved = stats['approved'] ?? 0;
-                  final pending = stats['pending'] ?? 0;
+                  final pending = stats['pending approval'] ?? 0;
                   final rejected = stats['rejected'] ?? 0;
 
                   final total = approved + pending + rejected;
@@ -533,13 +519,12 @@ class OverviewPageState extends State<OverviewPage> {
     );
   }
 
-  // -----------------------
-  // Async Data Fetchers
-  // -----------------------
-
   Future<String> _getCurrentBalance() async {
     try {
-      final snapshot = await _firestore.collection('momo_callbacks').get();
+      final snapshot = await _firestore
+          .collectionGroup('transactions')
+          .where('status', isEqualTo: 'Completed')
+          .get();
 
       double totalDeposits = 0;
       double totalWithdrawals = 0;
@@ -558,11 +543,8 @@ class OverviewPageState extends State<OverviewPage> {
 
       final currentBalance = totalDeposits - totalWithdrawals;
 
-      return NumberFormat.currency(
-        locale: 'en_UG',
-        symbol: 'UGX',
-        decimalDigits: 2,
-      ).format(currentBalance);
+      return NumberFormat.currency(locale: 'en_UG', symbol: 'UGX', decimalDigits: 2)
+          .format(currentBalance);
     } catch (e) {
       debugPrint('Error calculating current balance: $e');
       return 'Error';
@@ -595,40 +577,39 @@ class OverviewPageState extends State<OverviewPage> {
   }
 
   Future<String> _getPendingLoansCount() async {
-  try {
-    final snapshot = await _firestore.collectionGroup('loans').get();
+    try {
+      final snapshot = await _firestore.collectionGroup('loans').get();
 
-    final pendingLoans = snapshot.docs.where((doc) {
-      final status = (doc['status'] ?? '').toString().toLowerCase().trim();
-      return status == 'pending';  // Check this matches your detail page filter exactly
-    }).toList();
+      final pendingLoans = snapshot.docs.where((doc) {
+        final status = (doc['status'] ?? '').toString().toLowerCase().trim();
+        return status == 'pending approval';
+      }).toList();
 
-    return pendingLoans.length.toString();
-  } catch (e) {
-    debugPrint('Error fetching pending loans count: $e');
-    return '0';
+      return pendingLoans.length.toString();
+    } catch (e) {
+      debugPrint('Error fetching pending loans count: $e');
+      return '0';
+    }
   }
-}
-
 
   Future<Map<String, int>> _getLoanStats() async {
     try {
       final snapshot = await _firestore.collectionGroup('loans').get();
       int approved = 0, pending = 0, rejected = 0;
       for (var doc in snapshot.docs) {
-        final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+        final status = (doc.data()['status'] ?? '').toString().toLowerCase().trim();
         if (status == 'approved') {
           approved++;
-        } else if (status == 'pending') {
+        } else if (status == 'pending approval') {
           pending++;
         } else if (status == 'rejected') {
           rejected++;
         }
       }
-      return {'approved': approved, 'pending': pending, 'rejected': rejected};
+      return {'approved': approved, 'pending approval': pending, 'rejected': rejected};
     } catch (e) {
       debugPrint('Error fetching loan stats: $e');
-      return {'approved': 0, 'pending': 0, 'rejected': 0};
+      return {'approved': 0, 'pending approval': 0, 'rejected': 0};
     }
   }
 }

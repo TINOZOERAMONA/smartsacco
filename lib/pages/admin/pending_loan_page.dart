@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'membersDetails.dart'; // Make sure this is imported
+import 'membersDetails.dart'; // Ensure this import is correct in your project
 
 class PendingLoansPage extends StatelessWidget {
   const PendingLoansPage({super.key});
 
+  /// Fetches user data from Firestore given a userId
   Future<Map<String, dynamic>> getUserData(String userId) async {
     try {
       debugPrint('Fetching user data for userId: $userId');
@@ -24,7 +25,7 @@ class PendingLoansPage extends StatelessWidget {
     }
   }
 
-  /// Extracts user ID from the path of the loan reference
+  /// Extracts the userId from the Firestore document reference path
   String extractUserId(DocumentReference loanRef) {
     final pathSegments = loanRef.path.split('/');
     debugPrint('LoanRef path: ${loanRef.path}');
@@ -46,7 +47,7 @@ class PendingLoansPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collectionGroup('loans')
-            .where('status', isEqualTo: 'pending')
+            .where('status', isEqualTo: 'pending approval')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -65,6 +66,11 @@ class PendingLoansPage extends StatelessWidget {
               final loan = loans[index];
               final userId = extractUserId(loan.reference);
 
+              if (userId.isEmpty) {
+                // Skip loan if userId cannot be determined
+                return const SizedBox();
+              }
+
               return FutureBuilder<Map<String, dynamic>>(
                 future: getUserData(userId),
                 builder: (context, userSnapshot) {
@@ -73,7 +79,7 @@ class PendingLoansPage extends StatelessWidget {
                   }
 
                   if (!userSnapshot.hasData || userSnapshot.data!.isEmpty) {
-                    return const SizedBox(); // Skip invalid user
+                    return const SizedBox(); // Skip if no user data
                   }
 
                   final userData = userSnapshot.data!;
@@ -86,15 +92,14 @@ class PendingLoansPage extends StatelessWidget {
                     child: ListTile(
                       title: Text(userName),
                       subtitle: Text('Amount: UGX ${amount.toString()} | Status: $status'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () {
-
                         Navigator.pushNamed(
                           context,
                           '/member_details',
-                          arguments: userId,
+                          arguments: {'userId': userId},
                         );
                       },
-                     
                     ),
                   );
                 },
