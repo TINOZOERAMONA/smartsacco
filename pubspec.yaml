@@ -56,6 +56,9 @@ dependencies:
   fl_chart: ^0.64.0
   share_plus: ^7.2.1
   uuid: ^4.3.3
+  share_plus: ^11.0.0
+  fl_chart: ^1.0.0
+  csv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
