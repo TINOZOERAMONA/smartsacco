@@ -13,7 +13,6 @@ class _MembersPageState extends State<MembersPage> {
   late Future<List<Map<String, dynamic>>> _membersFuture;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  int _activeMemberCount = 0;
 
   @override
   void initState() {
@@ -34,18 +33,6 @@ class _MembersPageState extends State<MembersPage> {
 
   Future<void> _loadMembers() async {
     _membersFuture = _fetchMembers();
-    final members = await _membersFuture;
-    int count = 0;
-    
-    for (var member in members) {
-      if ((member['totalLoan'] ?? 0) > 0) {
-        count++;
-      }
-    }
-    
-    setState(() {
-      _activeMemberCount = count;
-    });
   }
 
   Future<List<Map<String, dynamic>>> _fetchMembers() async {
@@ -210,25 +197,13 @@ class _MembersPageState extends State<MembersPage> {
     setState(() {
       _membersFuture = _fetchMembers();
     });
-    final members = await _membersFuture;
-    int count = 0;
-    
-    for (var member in members) {
-      if ((member['totalLoan'] ?? 0) > 0) {
-        count++;
-      }
-    }
-    
-    setState(() {
-      _activeMemberCount = count;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Team Members'),
+        title: const Text('SACCO Members'),
         centerTitle: true,
         actions: [
           IconButton(
@@ -252,7 +227,6 @@ class _MembersPageState extends State<MembersPage> {
               ),
             ),
           ),
-          _buildSummaryCard(context),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _membersFuture,
@@ -326,148 +300,6 @@ class _MembersPageState extends State<MembersPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Center(
-                child: _buildSummaryItem(
-                  icon: Icons.people,
-                  value: _activeMemberCount.toString(),
-                  label: 'Active Members',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => _showActiveLoanDetails(context),
-                child: const Text('View active members'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem({required IconData icon, required String value, required String label}) {
-    return Column(
-      children: [
-        Icon(icon, size: 36, color: Colors.blue),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showActiveLoanDetails(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.5,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) {
-          return FutureBuilder<List<Map<String, dynamic>>>(
-            future: _membersFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              
-              final members = snapshot.data ?? [];
-              final activeMembers = members.where((m) => (m['totalLoan'] ?? 0) > 0).toList();
-              
-              return Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const Text(
-                      'Active Team Members',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: activeMembers.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.credit_card_off, size: 48, color: Colors.grey),
-                                  const SizedBox(height: 16),
-                                  const Text('No active loans'),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              controller: scrollController,
-                              itemCount: activeMembers.length,
-                              itemBuilder: (context, index) {
-                                final member = activeMembers[index];
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    child: Text(member['fullName'][0].toUpperCase()),
-                                  ),
-                                  title: Text(member['fullName']),
-                                  subtitle: Text(member['email']),
-                                  trailing: Text(
-                                    '${member['loanCount']} loan${member['loanCount'] > 1 ? 's' : ''}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    _navigateToMemberDetails(member['id']);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }

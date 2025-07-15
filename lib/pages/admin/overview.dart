@@ -236,7 +236,7 @@ class OverviewPageState extends State<OverviewPage> {
                                 builder: (_) => const PendingLoansPage())),
                       ),
                       _buildSummaryCard(
-                        title: 'Current Balance',
+                        title: 'Total Savings',
                         icon: Icons.account_balance_wallet,
                         iconColor: Colors.teal.shade700,
                         valueFuture: _getCurrentBalance(),
