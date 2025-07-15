@@ -112,6 +112,13 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
           if (filteredLoans.isEmpty) {
             return const Center(child: Text('No loans found for selected filter.'));
           }
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Total Active Loans: ${filteredLoans.length}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          );
 
           return ListView.builder(
             itemCount: filteredLoans.length,
@@ -163,11 +170,12 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
                       title: Text(
-                          '${userData['name'] ?? 'Unknown'} (${userData['email'] ?? 'No Email'})',
+                          'Name:${userData['fullName'] ?? 'Unknown'}',
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text('Email:${userData['email'] ?? 'No Email'}'),
                           Text('Phone: ${userData['phone'] ?? 'N/A'}'),
                           Text('Loan Amount: UGX ${amount.toStringAsFixed(2)}'),
                           Text('Monthly Payment: UGX ${monthlyPayment.toStringAsFixed(2)}'),
