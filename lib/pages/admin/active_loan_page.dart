@@ -249,6 +249,134 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
           ),
         ],
       ),
+
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collectionGroup('loans') // collection group query across all users
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No active loans found.'));
+          }
+
+          // Filter only approved loans
+          final allApprovedLoans = snapshot.data!.docs.where((doc) {
+            final loanData = doc.data() as Map<String, dynamic>;
+            final status = loanData['status'] as String?;
+            return _isApproved(status);
+          }).toList();
+
+          // Apply the due date filters
+          final filteredLoans = allApprovedLoans.where((doc) {
+            final loanData = doc.data() as Map<String, dynamic>;
+            final Timestamp? dueTimestamp = loanData['dueDate'];
+            if (dueTimestamp == null) return false;
+            final dueDate = dueTimestamp.toDate();
+
+            switch (_selectedFilter) {
+              case LoanFilter.all:
+                return true;
+              case LoanFilter.dueSoon:
+                return dueDate.isAfter(today) && dueDate.isBefore(next7Days);
+              case LoanFilter.overdue:
+                return dueDate.isBefore(today);
+            }
+          }).toList();
+
+          if (filteredLoans.isEmpty) {
+            return const Center(child: Text('No loans found for selected filter.'));
+          }
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Total Active Loans: ${filteredLoans.length}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          );
+
+          return ListView.builder(
+            itemCount: filteredLoans.length,
+            itemBuilder: (context, index) {
+              final loan = filteredLoans[index];
+              final loanData = loan.data() as Map<String, dynamic>;
+
+              // Extract userId from document path: users/{userId}/loans/{loanId}
+              final pathSegments = loan.reference.path.split('/');
+              String userId = '';
+              if (pathSegments.length >= 2 && pathSegments[0] == 'users') {
+                userId = pathSegments[1];
+              }
+
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: _getUserData(userId),
+                builder: (context, userSnapshot) {
+                  if (userSnapshot.connectionState == ConnectionState.waiting) {
+                    return const ListTile(
+                      title: Text('Loading user info...'),
+                    );
+                  }
+                  if (!userSnapshot.hasData) {
+                    return ListTile(
+                      title: Text('User not found'),
+                      subtitle: Text('Loan ID: ${loan.id}'),
+                    );
+                  }
+
+                  final userData = userSnapshot.data!;
+                  final dueDate = loanData['dueDate']?.toDate();
+
+                  // Safely parse numeric fields, fallback to 0.0
+                  double parseAmount(dynamic value) {
+                    if (value == null) return 0.0;
+                    if (value is num) return value.toDouble();
+                    return double.tryParse(value.toString()) ?? 0.0;
+                  }
+
+                  final amount = parseAmount(loanData['amount']);
+                  final monthlyPayment = parseAmount(loanData['monthlyPayment']);
+                  final remainingBalance = parseAmount(loanData['remainingBalance']);
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 3,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      title: Text(
+                          'Name:${userData['fullName'] ?? 'Unknown'}',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Email:${userData['email'] ?? 'No Email'}'),
+                          Text('Phone: ${userData['phone'] ?? 'N/A'}'),
+                          Text('Loan Amount: UGX ${amount.toStringAsFixed(2)}'),
+                          Text('Monthly Payment: UGX ${monthlyPayment.toStringAsFixed(2)}'),
+                          Text('Remaining Balance: UGX ${remainingBalance.toStringAsFixed(2)}'),
+                          Text(
+                              'Due Date: ${dueDate != null ? dueDate.toLocal().toString().split(' ')[0] : "N/A"}'),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.message, color: Colors.green),
+                        tooltip: 'Send WhatsApp Reminder',
+                        onPressed: () {
+                          final phone = userData['phone']?.toString() ?? '';
+                          final name = userData['name']?.toString() ?? 'Member';
+                          if (phone.isNotEmpty) {
+                            _sendWhatsAppReminder(phone, name);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('User phone number not available')),
+                            );
+                          }
+                        },
+                      ),
       body: Column(
         children: [
           Padding(
@@ -320,6 +448,7 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                           style: const TextStyle(fontSize: 18),
                         ),
                       ],
+
                     ),
                   );
                 }

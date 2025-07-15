@@ -28,6 +28,28 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     _initializeData();
   }
 
+
+  Map<String, int> _countLoanStatuses(List<Map<String, dynamic>> loans) {
+    final Map<String, int> counts = {
+      'approved': 0,
+      'pending': 0,
+      'rejected': 0,
+    };
+
+    for (var loan in loans) {
+      final status = (loan['status'] ?? '').toString().toLowerCase().trim();
+      if (counts.containsKey(status)) {
+        counts[status] = counts[status]! + 1;
+      }
+    }
+
+    return counts;
+  }
+
+
+  Future<List<Map<String, dynamic>>> _fetchUserLoans(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -479,6 +501,109 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                Text('Name: ${userData['fullName'] ?? 'N/A'}',
+                    style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                Text('Email: ${userData['email'] ?? 'N/A'}',
+                    style: const TextStyle(fontSize: 16)),
+                const SizedBox(height: 8),
+                Text('Phone: ${userData['phone'] ?? 'N/A'}',
+                    style: const TextStyle(fontSize: 16)),
+                const Divider(height: 30),
+                const Text('Loan History',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _fetchUserLoans(userId),
+                  builder: (context, loanSnapshot) {
+                    if (loanSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (loanSnapshot.hasError) {
+                      return Center(
+                          child: Text('Error: ${loanSnapshot.error}'));
+                    }
+
+                    final loans = loanSnapshot.data ?? [];
+                    final statusCounts = _countLoanStatuses(loans);
+                    final totalLoans = loans.length;
+                    if (loans.isEmpty) {
+                      return const Text('No loans found for this user.');
+                    }
+                    Text(
+                      'Loan Statuses: '
+                      '${statusCounts['approved']} Approved, '
+                      '${statusCounts['pending']} Pending, '
+                      '${statusCounts['rejected']} Rejected '
+                      '($totalLoans Total)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    );
+                    const SizedBox(height: 12);
+
+
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: loans.length,
+                      itemBuilder: (context, index) {
+                        final loan = loans[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          child: ListTile(
+                            title: Text(
+                                'Amount: UGX ${loan['amount']?.toString() ?? 'N/A'}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Builder(
+                                builder: (context) {
+                                  final rawStatus = loan['status'];
+                                  final status = (rawStatus != null && rawStatus.toString().trim().isNotEmpty)
+                                      ? rawStatus.toString().toLowerCase().trim()
+                                      : 'not set';
+
+                                  Color statusColor;
+                                  switch (status) {
+                                    case 'approved':
+                                      statusColor = Colors.green;
+                                      break;
+                                    case 'pending':
+                                      statusColor = Colors.orange;
+                                      break;
+                                    case 'rejected':
+                                      statusColor = Colors.red;
+                                      break;
+                                    default:
+                                      statusColor = Colors.grey;
+                                  }
+
+                                  return Row(
+                                    children: [
+                                      const Text('Status: '),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: statusColor.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          status.toUpperCase(),
+                                          style: TextStyle(
+                                            color: statusColor,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+
                 // Savings summary
                 if (_totalSavings != null)
                   Padding(
@@ -504,6 +629,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                                     color: Colors.grey,
                                   ),
                                 ),
+
                                 Text(
                                   _currencyFormat.format(_totalSavings),
                                   style: const TextStyle(
