@@ -10,6 +10,8 @@ class Transaction {
   final String method; // Mobile Money, Bank Transfer
   final String? reference;
   final String? phoneNumber;
+  final String? loanId;         // optional
+  final String? paymentId; 
 
   Transaction({
     required this.id,
@@ -20,10 +22,32 @@ class Transaction {
     required this.method,
     this.reference,
     this.phoneNumber,
+    this.loanId,
+    this.paymentId,
   });
 
   String getFormattedDate() => DateFormat('MMM d, y').format(date);
   String getAmountText() => NumberFormat.currency(symbol: 'UGX ').format(amount);
+
+  // Add this to TransactionModel.dart
+static Transaction createDeposit({
+  required String id,
+  required double amount,
+  required String method,
+  String? reference,
+  String? phoneNumber,
+}) {
+  return Transaction(
+    id: id,
+    amount: amount,
+    date: DateTime.now(),
+    type: 'Deposit',
+    status: 'Completed',
+    method: method,
+    reference: reference,
+    phoneNumber: phoneNumber,
+  );
+}
 
   Color getStatusColor() {
     switch (status) {
@@ -40,14 +64,16 @@ class Transaction {
 
    factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      id: json['id'],
-      amount: json['amount'].toDouble(),
+      id: json['id'] ?? '',
+      amount: (json['amount'] as num).toDouble(),
       date: DateTime.parse(json['date']),
-      type: json['type'],
-      status: json['status'],
-      method: json['method'],
+      type: json['type'] ?? 'Transaction',
+      status: json['status'] ?? 'Completed',
+      method: json['method'] ?? 'Mobile Money',
       reference: json['reference'],
       phoneNumber: json['phoneNumber'],
+      loanId: json['loanId'] as String?,
+      paymentId: json['paymentId'] as String?,
     );
   }
 
@@ -60,6 +86,8 @@ class Transaction {
     'method': method,
     'reference': reference,
     'phoneNumber': phoneNumber,
+    'loanId': loanId,
+    'paymentId': paymentId,
   };
 }
 

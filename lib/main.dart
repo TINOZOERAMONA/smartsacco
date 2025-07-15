@@ -117,7 +117,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
       navigatorKey: navigatorKey,
       title: 'SACCO SHIELD',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/admin-dashboard',
+      initialRoute: '/member-dashboard',
       routes: {
         '/splash': (context) => SplashPage(),
         '/home': (context) => const HomePage(),
