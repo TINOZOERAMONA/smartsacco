@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:smartsacco/models/memberdashboar.dart';
+import 'package:smartsacco/pages/admin/dashboard_page.dart';
+import 'package:smartsacco/pages/admin/member_page.dart';
+import 'package:smartsacco/pages/admin/membersDetails.dart';
 import 'package:smartsacco/pages/forgotpassword.dart';
 import 'package:smartsacco/pages/home_page.dart';
 import 'package:smartsacco/pages/login.dart';
-import 'package:smartsacco/pages/member_dashboard.dart';
 import 'package:smartsacco/pages/register.dart';
 import 'package:smartsacco/pages/splash_page.dart';
 import 'package:smartsacco/pages/emailverification_page.dart';
@@ -21,7 +24,6 @@ import 'package:flutter/foundation.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setupLogging();
-  final d = DefaultFirebaseOptions.currentPlatform;
     await Firebase.initializeApp(
       options: kIsWeb
           ? DefaultFirebaseOptions.web

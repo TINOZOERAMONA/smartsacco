@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'loan_approval_page.dart';
 
 class LoanPage extends StatefulWidget {
-  const LoanPage({Key? key}) : super(key: key);
+  const LoanPage({super.key});
 
   @override
   State<LoanPage> createState() => _LoanPageState();

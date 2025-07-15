@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,10 +10,10 @@ class LoanApprovalPage extends StatefulWidget {
   final Map<String, dynamic> loanData;
 
   const LoanApprovalPage({
-    Key? key,
+    super.key,
     required this.loanRef,
     required this.loanData,
-  }) : super(key: key);
+  });
 
   @override
   State<LoanApprovalPage> createState() => _LoanApprovalPageState();
@@ -151,6 +153,7 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
                     value: 'Rejected',
                     child: Text('Reject'),
                   ),
+                  
                 ],
               ),
 

@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum NotificationType {
   payment,
   loan,
   promotion,
-  general,
+  general, loanApplication,
 }
 
 class AppNotification {
@@ -24,31 +26,27 @@ class AppNotification {
     this.actionUrl,
   });
 
-  factory AppNotification.fromJson(Map<String, dynamic> json) {
+  factory AppNotification.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return AppNotification(
-      id: json['id'],
-      title: json['title'],
-      message: json['message'],
-      date: DateTime.parse(json['date']),
-      type: NotificationType.values[json['type']],
-      isRead: json['isRead'],
-      actionUrl: json['actionUrl'],
+      id: doc.id,
+      title: data['title'] ?? 'Notification',
+      message: data['message'] ?? '',
+      date: data['date']?.toDate() ?? DateTime.now(),
+      type: NotificationType.values[data['type'] ?? 0],
+      isRead: data['isRead'] ?? false,
+      actionUrl: data['actionUrl'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
       'message': message,
-      'date': date.toIso8601String(),
+      'date': date,
       'type': type.index,
       'isRead': isRead,
       'actionUrl': actionUrl,
     };
   }
 }
-
-
-
-

@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 enum LoanFilter { all, dueSoon, overdue }
 
 class ActiveLoansPage extends StatefulWidget {
-  const ActiveLoansPage({Key? key}) : super(key: key);
+  const ActiveLoansPage({super.key});
 
   @override
   _ActiveLoansPageState createState() => _ActiveLoansPageState();
