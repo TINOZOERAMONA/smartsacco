@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:smartsacco/pages/admin/dashboard_page.dart';
+import 'package:smartsacco/pages/admin/member_page.dart';
+import 'package:smartsacco/pages/admin/membersDetails.dart';
 import 'package:smartsacco/pages/forgotpassword.dart';
 import 'package:smartsacco/pages/home_page.dart';
 import 'package:smartsacco/pages/login.dart';
@@ -16,18 +19,23 @@ import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  setupLogging();
-  final d = DefaultFirebaseOptions.currentPlatform;
+
+  try {
+    setupLogging();
+
     await Firebase.initializeApp(
       options: kIsWeb
           ? DefaultFirebaseOptions.web
           : DefaultFirebaseOptions.currentPlatform,
     );
-  runApp(const SaccoDashboardApp());
+
+    runApp(const SaccoDashboardApp());
+  } catch (e, stack) {
+    print("🔥 Error during app startup: $e");
+    print("📌 Stack trace: $stack");
+  }
 }
 
 class SaccoDashboardApp extends StatefulWidget {
@@ -52,9 +60,8 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
   void _initializeDeepLinks() {
     _appLinks = AppLinks();
 
-    // Handle incoming links when app is already running
     _linkSubscription = _appLinks.uriLinkStream.listen(
-          (Uri uri) {
+      (Uri uri) {
         _handleIncomingLink(uri.toString());
       },
       onError: (err) {
@@ -73,19 +80,16 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
     try {
       final uri = Uri.parse(link);
 
-      // Check if it's a password reset link
       if (uri.path.contains('reset') || uri.queryParameters.containsKey('oobCode')) {
         final resetCode = uri.queryParameters['oobCode'];
         final mode = uri.queryParameters['mode'];
 
         if (mode == 'resetPassword' && resetCode != null) {
-          // Navigate to custom password reset page
           navigatorKey.currentState?.pushNamed(
             '/custom-password-reset',
             arguments: {'resetCode': resetCode},
           );
         } else if (mode == 'verifyEmail') {
-          // Handle email verification if needed
           final actionCode = uri.queryParameters['oobCode'];
           if (actionCode != null) {
             navigatorKey.currentState?.pushNamed(
@@ -100,14 +104,13 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       title: 'SACCO SHIELD',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/splash',
+      initialRoute: '/member-dashboard',
       routes: {
         '/splash': (context) => SplashPage(),
         '/home': (context) => const HomePage(),
@@ -120,10 +123,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/member-dashboard': (context) => const MemberDashboard(),
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
-        '/member_details': (context) => const MemberDetailsPage(),
-
       },
-      // Handle routes that need parameters
       onGenerateRoute: (settings) {
         final args = settings.arguments as Map<String, dynamic>?;
 
@@ -143,21 +143,37 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
                 builder: (context) => CustomPasswordResetPage(resetCode: resetCode),
               );
             }
-            // If no reset code, redirect to forgot password page
-            return MaterialPageRoute(
-              builder: (context) => ForgotPasswordPage(),
-            );
+            return MaterialPageRoute(builder: (context) => ForgotPasswordPage());
+
+          case '/member_details':
+            final userId = args?['userId'] as String?;
+            if (userId != null) {
+              return MaterialPageRoute(
+                builder: (context) => MemberLoanDetailsPage(userId: userId),
+              );
+            }
+            return _errorRoute("Missing userId for member details");
 
           default:
-            return null;
+            return _errorRoute("Route not found: ${settings.name}");
         }
       },
       debugShowCheckedModeBanner: false,
     );
   }
+
+
+  Route _errorRoute(String message) {
+    return MaterialPageRoute(
+      builder: (context) => Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(child: Text(message)),
+      ),
+    );
+  }
 }
 
-// Add this class to handle deep links manually (for testing)
+// Optional helper class for testing deep links
 class DeepLinkHandler {
   static final DeepLinkHandler _instance = DeepLinkHandler._internal();
   factory DeepLinkHandler() => _instance;
@@ -171,7 +187,6 @@ class DeepLinkHandler {
     );
   }
 
-  // Method to manually test password reset (for development)
   static void testPasswordReset(BuildContext context, String testCode) {
     Navigator.pushNamed(
       context,
@@ -180,4 +195,3 @@ class DeepLinkHandler {
     );
   }
 }
-
