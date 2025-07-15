@@ -18,6 +18,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   String _selectedRole = 'Member';
 
@@ -30,6 +31,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -64,6 +66,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
           'uid': user.uid,
           'fullName': _fullNameController.text.trim(),
           'email': _emailController.text.trim(),
+          'phone': _phoneController.text.trim(),
           'pin': _passwordController.text.trim(),
           'role': _selectedRole.toLowerCase(),
           'registrationMethod': 'form',
@@ -147,6 +150,14 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
+              _buildTextField(
+                _phoneController,
+                'Telephone Number',
+                keyboardType: TextInputType.phone,
+                helperText: 'Hint: 0760500677',
+              ),
+              const SizedBox(height: 12),
+
               TextFormField(
                 keyboardType: TextInputType.text,
                 controller: _passwordController,
@@ -248,6 +259,11 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
         if (label == 'Email') {
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
             return 'Please enter a valid email address';
+          }
+        }
+        if (label == 'Telephone Number') {
+          if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+            return 'Please enter a valid 10-digit phone number';
           }
         }
         return null;
