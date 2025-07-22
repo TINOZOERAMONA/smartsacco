@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:smartsacco/pages/loan.dart';
-import 'package:smartsacco/pages/loanapplication.dart';
 import 'package:smartsacco/models/momopayment.dart';
 import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/feedback.dart';
 import 'package:smartsacco/models/notification.dart';
+import 'package:smartsacco/models/transactionmodel.dart';
 
 class SavingsHistory {
   final double amount;
@@ -50,9 +50,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
   String _lastWords = '';
   bool _isProcessing = false;
   bool _isSpeaking = false;
-  String _enteredPin = '';
-  bool _waitingForPin = false;
-
 
   int _currentIndex = 0;
   int _unreadNotifications = 0;
@@ -104,6 +101,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       print('Speech recognition initialized: $_speechEnabled');
     } catch (e) {
       print('Error initializing speech recognition: $e');
+    
       _speechEnabled = false;
     }
     setState(() {});
@@ -116,22 +114,24 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       await _flutterTts.setSpeechRate(0.5);
       await _flutterTts.setVolume(1.0);
       await _flutterTts.setPitch(1.0);
-      
+
       // Set completion handler to automatically start listening
       _flutterTts.setCompletionHandler(() async {
         setState(() {
           _isSpeaking = false;
           _isProcessing = false;
         });
-        await Future.delayed(const Duration(milliseconds: 300)); // let state update
+        await Future.delayed(
+          const Duration(milliseconds: 300),
+        ); // let state update
         if (!_isListening && !_isSpeaking && !_isProcessing) {
           print("Starting listening after TTS");
           _startAutoListening();
-        }else{
+        } else {
           print("Not starting listening. Conditions not met.");
         }
-        });
-        
+      });
+
       _flutterTts.setStartHandler(() {
         setState(() {
           _isSpeaking = true;
@@ -144,7 +144,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
           _isSpeaking = false;
         });
       });
-      
+
       // Welcome message with automatic listening
       Future.delayed(const Duration(seconds: 2), () {
         _speakWelcomeMessage();
@@ -157,20 +157,21 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         _startAutoListening();
       }
     });
-
   }
 
   void _speakWelcomeMessage() {
     _speakAndWaitForResponse(
       "Welcome to Members Dashboard. I will read you the menu options. "
       "After I finish, I will listen for your choice. "
+      "Option 1: Withdraw money. "
+      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
-      "Option 6: Make a deposit. "
+      "Option 6: Make a deposit - just say the amount and confirm. "
       "Option 7: Logout. "
       "Option 8: Repeat these options. "
-      "Which option would you like to choose? Please say the number."
+      "Which option would you like to choose? Please say the number.",
     );
   }
 
@@ -178,13 +179,15 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     if (!_isSpeaking) {
       _speakAndWaitForResponse(
         "Sorry, I couldn't understand you clearly. Let me repeat the options. "
+        "Option 1: Withdraw money. "
+        "Option 2: Apply for a loan. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
-        "Option 6: Make deposit. "
+        "Option 6: Make deposit - just say amount and confirm. "
         "Option 7: Logout. "
         "Option 8: Repeat options. "
-        "Which option would you like?"
+        "Which option would you like?",
       );
     }
   }
@@ -193,12 +196,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     if (_isSpeaking) {
       await _flutterTts.stop();
     }
-    
+
     setState(() {
       _isProcessing = true;
       _isSpeaking = true;
     });
-    
+
     try {
       await _flutterTts.speak(text);
     } catch (e) {
@@ -209,6 +212,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       });
     }
   }
+
   Future<void> _speakAndWaitForResponse(String text) async {
     await _speak(text);
     // The TTS completion handler will automatically start listening again
@@ -216,7 +220,9 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   void _startAutoListening() {
     if (!_speechEnabled || _isProcessing || _isSpeaking || _isListening) {
-      print('Cannot start listening: speechEnabled=$_speechEnabled, processing=$_isProcessing, speaking=$_isSpeaking, listening=$_isListening');
+      print(
+        'Cannot start listening: speechEnabled=$_speechEnabled, processing=$_isProcessing, speaking=$_isSpeaking, listening=$_isListening',
+      );
       return;
     }
 
@@ -243,12 +249,14 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
             if (_lastWords.trim().isEmpty) {
               _speakAndWaitForResponse(
                 "Sorry, I didn’t hear anything. Please try again. "
+                "Option 1: Withdraw money. "
+                "Option 2: Apply for a loan. "
                 "Option 3: Check savings. "
                 "Option 4: Check loans. "
                 "Option 5: Check amount due. "
                 "Option 6: Make deposit. "
                 "Option 7: Logout. "
-                "Which option would you like?"
+                "Which option would you like?",
               );
             } else {
               _processVoiceCommand(_lastWords);
@@ -256,7 +264,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
           }
         },
         listenFor: const Duration(seconds: 15), // Longer listening time
-        pauseFor: const Duration(seconds: 3),   // Pause before auto-ending
+        pauseFor: const Duration(seconds: 3), // Pause before auto-ending
         partialResults: true,
         localeId: "en_US",
         onSoundLevelChange: (level) {
@@ -269,11 +277,10 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         _isListening = false;
       });
       _speakAndWaitForResponse(
-        "There was a problem starting the microphone. Please try again."
+        "There was a problem starting the microphone. Please try again.",
       );
     }
   }
-
 
   void _stopListening() {
     if (_isListening) {
@@ -290,104 +297,92 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     command = command.trim();
     print('Processing command: $command');
 
-    if (_waitingForPin) {
-      _handlePinInput(command);
-      return;
-    }
-
-    
     if (_waitingForConfirmation) {
       _handleConfirmationResponse(command);
       return;
     }
-    
-    if (_currentVoiceAction == VoiceAction.deposit || _currentVoiceAction == VoiceAction.withdraw) {
+
+    if (_currentVoiceAction == VoiceAction.deposit ||
+        _currentVoiceAction == VoiceAction.withdraw) {
       _handleAmountInput(command);
       return;
     }
-    
+
     // Check if this is a menu return response
     if (command.contains('yes') || command.contains('menu')) {
       _returnToMainMenu();
       return;
     }
-    
-    // Main menu options
-    if (command.contains('3') || command.contains('three')) {
+
+    // Main menu options - Fixed to handle spoken numbers correctly
+    if (command.contains('1') || 
+        command.contains('one') || 
+        command.contains('withdraw')) {
+      _confirmChoice("1", "withdraw money");
+    } else if (command.contains('2') || 
+              command.contains('two') || 
+              command.contains('apply loan') ||
+              command.contains('loan')) {
+      _confirmChoice("2", "apply for a loan");
+    } else if (command.contains('3') || 
+              command.contains('three') ||
+              command.contains('savings') ||
+              command.contains('balance')) {
       _confirmChoice("3", "check your total savings");
-    } else if (command.contains('2') || command.contains('four')) {
+    } else if (command.contains('4') ||  // Fixed from '2' to '4'
+              command.contains('four') ||
+              command.contains('loans') ||
+              command.contains('active loans')) {
       _confirmChoice("4", "check your active loans");
-    } else if (command.contains('5') || command.contains('five')) {
+    } else if (command.contains('5') || 
+              command.contains('five') ||
+              command.contains('due') ||
+              command.contains('amount due')) {
       _confirmChoice("5", "check your amount due");
-    } else if (command.contains('6') || command.contains('six')) {
+    } else if (command.contains('6') || 
+              command.contains('six') ||
+              command.contains('deposit') ||
+              command.contains('make deposit')) {
       _confirmChoice("6", "make a deposit");
-    } else if (command.contains('7') || command.contains('seven')) {
+    } else if (command.contains('7') || 
+              command.contains('seven') ||
+              command.contains('logout') ||
+              command.contains('log out')) {
       _confirmChoice("7", "logout");
-    } else if (command.contains('8') || command.contains('eight') || command.contains('repeat')) {
+    } else if (command.contains('8') ||
+              command.contains('eight') ||
+              command.contains('repeat') ||
+              command.contains('options')) {
       _repeatOptions();
     } else {
       _speakAndWaitForResponse(
-        "I didn't understand that. Please say a number from 3 to 8. "
+        "I didn't understand that. Please say a number from 1 to 8. "
+        "Option 1: Withdraw money. "
+        "Option 2: Apply for a loan. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
-        "Option 6: Make deposit. "
+        "Option 6: Make deposit - just say amount and confirm. "
         "Option 7: Logout. "
         "Option 8: Repeat options. "
-        "Which option?"
+        "Which option?",
       );
     }
   }
-
-  void _handlePinInput(String command) {
-    final cleanedPin = command.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (cleanedPin.length == 4) {
-      _verifyPinAndDeposit(cleanedPin);
-    } else {
-      _speakAndWaitForResponse("I didn’t catch a valid 4-digit PIN. Please try again.");
-    }
-  }
-
-  Future<void> _verifyPinAndDeposit(String pin) async {
-    _waitingForPin = false;
-
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId)
-          .get();
-
-      final storedPin = doc['pin'] ?? '';
-
-      if (storedPin == pin) {
-        _processDeposit(_pendingAmount, 'Voice PIN');
-        _speakAndWaitForResponse(
-          "Deposit successful. Your new balance is ${_formatCurrencyForSpeech(_currentSavings + _pendingAmount)} Uganda Shillings. Say yes to return to the main menu."
-        );
-        _resetVoiceState();
-      } else {
-        _speakAndWaitForResponse("Incorrect PIN. Please say your 4-digit PIN again.");
-        _waitingForPin = true;
-      }
-    } catch (e) {
-      print("PIN verification error: $e");
-      _speakAndWaitForResponse("Error verifying PIN. Please try again.");
-    }
-  }
-
-
+  // PIN methods removed - deposits now processed directly without PIN verification
 
   void _repeatOptions() {
     _speakAndWaitForResponse(
       "Here are your options again. "
+      "Option 1: Withdraw money. "
+      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
-      "Option 6: Make a deposit. "
+      "Option 6: Make a deposit - just say the amount and confirm. "
       "Option 7: Logout. "
       "Option 8: Repeat these options. "
-      "Which option would you like to choose?"
+      "Which option would you like to choose?",
     );
   }
 
@@ -396,9 +391,9 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       _waitingForConfirmation = true;
       _pendingConfirmation = option;
     });
-    
+
     _speakAndWaitForResponse(
-      "Did you say option $option to $description? Please say yes to confirm or no to go back to the menu."
+      "Did you say option $option to $description? Please say yes to confirm or no to go back to the menu.",
     );
   }
 
@@ -406,10 +401,11 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     setState(() {
       _waitingForConfirmation = false;
     });
-    
+
     if (response.contains('yes') || response.contains('confirm')) {
       // Handle the confirmed action based on current state
-      if (_currentVoiceAction == VoiceAction.deposit || _currentVoiceAction == VoiceAction.withdraw) {
+      if (_currentVoiceAction == VoiceAction.deposit ||
+          _currentVoiceAction == VoiceAction.withdraw) {
         _handleConfirmation(); // Process the transaction
       } else {
         _executeChoice(_pendingConfirmation); // Execute the menu choice
@@ -419,7 +415,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     } else {
       // Didn't understand the response, ask again
       _speakAndWaitForResponse(
-        "Please say yes to confirm or no to cancel. Did you want to proceed?"
+        "Please say yes to confirm or no to cancel. Did you want to proceed?",
       );
       setState(() {
         _waitingForConfirmation = true;
@@ -429,6 +425,18 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   void _executeChoice(String option) {
     switch (option) {
+      case "1":
+        _speakAndWaitForResponse(
+          "To withdraw money, please visit your SACCO administrator. "
+          "Would you like to return to the main menu? Say yes for menu.",
+        );
+        break;
+      case "2":
+        _speakAndWaitForResponse(
+          "To apply for a loan, please visit your SACCO administrator. "
+          "Would you like to return to the main menu? Say yes for menu.",
+        );
+        break;
       case "3":
         _speakSavingsInfo();
         break;
@@ -447,40 +455,54 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     }
   }
 
+
   void _speakSavingsInfo() {
     _lastInformationType = 'savings';
     final formattedSavings = _formatCurrencyForSpeech(_currentSavings);
     _speakAndWaitForResponse(
       "Your total savings balance is $formattedSavings Uganda Shillings. "
       "You have ${_savingsHistory.length} transactions in your savings history. "
-      "Would you like to return to the main menu? Say yes to go back to the menu."
+      "Would you like to return to the main menu? Say yes to go back to the menu.",
     );
   }
 
   void _speakLoansInfo() {
     _lastInformationType = 'loans';
-    final activeLoans = _loans.where((loan) => loan.status == 'Active').toList();
-    final overdueLoans = _loans.where((loan) => loan.status == 'Overdue').toList();
-    
+    final activeLoans = _loans
+        .where((loan) => loan.status == 'Active')
+        .toList();
+    final overdueLoans = _loans
+        .where((loan) => loan.status == 'Overdue')
+        .toList();
+
     String message = "";
-    
+
     if (activeLoans.isEmpty && overdueLoans.isEmpty) {
       message = "You currently have no active or overdue loans. ";
     } else {
       if (activeLoans.isNotEmpty) {
-        final totalActiveCost = activeLoans.fold(0.0, (sum, loan) => sum + loan.remainingBalance);
-        message += "You have ${activeLoans.length} active loans. "
+        final totalActiveCost = activeLoans.fold(
+          0.0,
+          (sum, loan) => sum + loan.remainingBalance,
+        );
+        message +=
+            "You have ${activeLoans.length} active loans. "
             "Total remaining balance is ${_formatCurrencyForSpeech(totalActiveCost)} Uganda Shillings. ";
       }
-      
+
       if (overdueLoans.isNotEmpty) {
-        final totalOverdueCost = overdueLoans.fold(0.0, (sum, loan) => sum + loan.remainingBalance);
-        message += "You have ${overdueLoans.length} overdue loans. "
+        final totalOverdueCost = overdueLoans.fold(
+          0.0,
+          (sum, loan) => sum + loan.remainingBalance,
+        );
+        message +=
+            "You have ${overdueLoans.length} overdue loans. "
             "Total overdue amount is ${_formatCurrencyForSpeech(totalOverdueCost)} Uganda Shillings. ";
       }
     }
-    
-    message += "Would you like to return to the main menu? Say yes to go back to the menu.";
+
+    message +=
+        "Would you like to return to the main menu? Say yes to go back to the menu.";
     _speakAndWaitForResponse(message);
   }
 
@@ -488,15 +510,17 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _lastInformationType = 'due';
     final totalDue = _calculateTotalDue();
     String message = "";
-    
+
     if (totalDue > 0) {
-      message = "Your total amount due is ${_formatCurrencyForSpeech(totalDue)} Uganda Shillings. "
+      message =
+          "Your total amount due is ${_formatCurrencyForSpeech(totalDue)} Uganda Shillings. "
           "This includes all upcoming loan payments. ";
     } else {
       message = "You have no payments due at this time. ";
     }
-    
-    message += "Would you like to return to the main menu? Say yes to go back to the menu.";
+
+    message +=
+        "Would you like to return to the main menu? Say yes to go back to the menu.";
     _speakAndWaitForResponse(message);
   }
 
@@ -504,39 +528,41 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     setState(() {
       _currentVoiceAction = VoiceAction.deposit;
     });
-    
+
     _speakAndWaitForResponse(
       "To make a deposit, please tell me the amount you want to deposit. "
       "For example, say 'fifty thousand' for 50,000 Uganda Shillings. "
-      "What amount would you like to deposit?"
+      "After you say the amount, I'll ask you to confirm once, then process the deposit immediately. "
+      "What amount would you like to deposit?",
     );
   }
 
-  
-    
-    
   void _handleAmountInput(String spokenAmount) {
     final amount = _parseSpokenAmount(spokenAmount);
-    
+
     if (amount <= 0) {
-      String actionType = _currentVoiceAction == VoiceAction.deposit ? "deposit" : "withdraw";
+      String actionType = _currentVoiceAction == VoiceAction.deposit
+          ? "deposit"
+          : "withdraw";
       _speakAndWaitForResponse(
         "I couldn't understand the amount. Please say the amount clearly. "
         "For example, say 'ten thousand' for 10,000 shillings. "
-        "How much would you like to $actionType?"
+        "How much would you like to $actionType?",
       );
       return;
     }
-    
+
     setState(() {
       _pendingAmount = amount;
       _waitingForConfirmation = true;
     });
-    
-    String actionType = _currentVoiceAction == VoiceAction.deposit ? "deposit" : "withdraw";
+
+    String actionType = _currentVoiceAction == VoiceAction.deposit
+        ? "deposit"
+        : "withdraw";
     _speakAndWaitForResponse(
       "You want to $actionType ${_formatCurrencyForSpeech(amount)} Uganda Shillings. "
-      "Is this correct? Say yes to confirm or no to try again."
+      "Is this correct? Say yes to confirm or no to try again.",
     );
   }
 
@@ -545,9 +571,9 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       _currentVoiceAction = VoiceAction.logout;
       _waitingForConfirmation = true;
     });
-    
+
     _speakAndWaitForResponse(
-      "Are you sure you want to logout? Say yes to confirm or no to go back to the menu."
+      "Are you sure you want to logout? Say yes to confirm or no to go back to the menu.",
     );
   }
 
@@ -557,30 +583,32 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         _logout();
         break;
       case VoiceAction.deposit:
-        // Request the PIN instead of processing payment
-        _waitingForPin = true;
-        _speakAndWaitForResponse("Please say your 4-digit PIN to confirm the deposit.");
+        // Directly process the deposit
+        _processDeposit(_pendingAmount, 'Voice Deposit');
+        _speakAndWaitForResponse(
+          "Deposit successful. Your new balance is ${_formatCurrencyForSpeech(_currentSavings + _pendingAmount)} Uganda Shillings. "
+          "Would you like to hear the main menu? Say yes for menu.",
+        );
+        _resetVoiceState();
         break;
       default:
         _returnToMainMenu();
     }
-
-    if (_currentVoiceAction != VoiceAction.deposit) {
-      _resetVoiceState();
-    }
   }
 
-
   void _handleCancellation() {
-    if (_currentVoiceAction == VoiceAction.deposit || _currentVoiceAction == VoiceAction.withdraw) {
-      String actionType = _currentVoiceAction == VoiceAction.deposit ? "deposit" : "withdraw";
+    if (_currentVoiceAction == VoiceAction.deposit ||
+        _currentVoiceAction == VoiceAction.withdraw) {
+      String actionType = _currentVoiceAction == VoiceAction.deposit
+          ? "deposit"
+          : "withdraw";
       setState(() {
         _waitingForConfirmation = false;
         _pendingAmount = 0;
         // Keep the current action so they can try again
       });
       _speakAndWaitForResponse(
-        "Let's try again. How much would you like to $actionType?"
+        "Let's try again. How much would you like to $actionType?",
       );
     } else {
       _returnToMainMenu();
@@ -591,13 +619,15 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _resetVoiceState();
     _speakAndWaitForResponse(
       "Returning to main menu. "
+      "Option 1:Withdraw money. "
+      "Option 2:Apply for a loan"
       "Option 3: Check savings. "
       "Option 4: Check loans. "
       "Option 5: Check amount due. "
-      "Option 6: Make deposit. "
+      "Option 6: Make deposit - just say amount and confirm. "
       "Option 7: Logout. "
       "Option 8: Repeat options. "
-      "Which option would you like?"
+      "Which option would you like?",
     );
   }
 
@@ -613,7 +643,8 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   double _parseSpokenAmount(String spokenAmount) {
     // Enhanced number parsing
-    spokenAmount = spokenAmount.toLowerCase()
+    spokenAmount = spokenAmount
+        .toLowerCase()
         .replaceAll(' ', '')
         .replaceAll('thousand', '000')
         .replaceAll('million', '000000')
@@ -633,13 +664,15 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         .replaceAll('two', '2')
         .replaceAll('one', '1')
         .replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     return double.tryParse(spokenAmount) ?? 0;
   }
 
   void _processVoiceDeposit(double amount) {
-    _speak("Processing deposit of ${_formatCurrencyForSpeech(amount)} Uganda Shillings. Please wait...");
-    
+    _speak(
+      "Processing deposit of ${_formatCurrencyForSpeech(amount)} Uganda Shillings. Please wait...",
+    );
+
     // Use mobile money payment
     Navigator.push(
       context,
@@ -651,12 +684,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
               _processDeposit(amount, 'Mobile Money');
               _speakAndWaitForResponse(
                 "Deposit successful. Your new balance is ${_formatCurrencyForSpeech(_currentSavings + amount)} Uganda Shillings. "
-                "Would you like to hear the main menu? Say yes for menu."
+                "Would you like to hear the main menu? Say yes for menu.",
               );
             } else {
               _speakAndWaitForResponse(
                 "Deposit failed. Please try again. "
-                "Would you like to hear the main menu? Say yes for menu."
+                "Would you like to hear the main menu? Say yes for menu.",
               );
             }
             _resetVoiceState();
@@ -665,8 +698,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       ),
     );
   }
-
-  
 
   String _formatCurrencyForSpeech(double amount) {
     final formatter = NumberFormat('#,###');
@@ -679,7 +710,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     if (user != null) {
       memberId = user.uid;
 
-      final memberDoc = await FirebaseFirestore.instance
+      final memberDoc = await firestore.FirebaseFirestore.instance
           .collection('users')
           .doc(memberId)
           .get();
@@ -690,13 +721,68 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       });
 
       _fetchSavingsData();
-      _fetchLoansData();
+      //_fetchLoansData();
       _fetchNotifications();
+      _fetchTransactionHistory();
     }
   }
-  
+
+  Future<void> _fetchTransactionHistory() async {
+    try {
+      print('🔄 Fetching transaction history for member: $memberId');
+
+      final transactionsSnapshot = await firestore.FirebaseFirestore.instance
+          .collection('users')
+          .doc(memberId)
+          .collection('transactions')
+          .orderBy('date', descending: true)
+          .limit(50)
+          .get();
+
+      List<Transaction> transactions = [];
+
+      for (var doc in transactionsSnapshot.docs) {
+        final data = doc.data();
+
+        // Validate transaction data
+        if (data['amount'] != null && data['date'] != null) {
+          transactions.add(
+            Transaction(
+              id: doc.id,
+              amount: data['amount']?.toDouble() ?? 0,
+              type: data['type'] ?? 'Unknown',
+              date: data['date']?.toDate() ?? DateTime.now(),
+              status: data['status'] ?? 'Pending',
+              method: data['method'] ?? 'Unknown',
+              reference: data['reference'],
+              phoneNumber: data['phoneNumber'],
+            ),
+          );
+        } else {
+          print('⚠️ Skipping invalid transaction: ${doc.id}');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _transactions.clear();
+          _transactions.addAll(transactions);
+        });
+      }
+
+      print('✅ Transaction history fetched:');
+      print('   - Total transactions: ${transactions.length}');
+      print(
+        '   - Recent transactions: ${transactions.take(5).map((t) => '${t.type}: ${_formatCurrency(t.amount)}').join(', ')}',
+      );
+    } catch (e) {
+      print('❌ Error fetching transaction history: $e');
+      debugPrint('Error fetching transaction history: $e');
+    }
+  }
+
   Future<void> _fetchSavingsData() async {
-    final savingsSnapshot = await FirebaseFirestore.instance
+    final savingsSnapshot = await firestore.FirebaseFirestore.instance
         .collection('users')
         .doc(memberId)
         .collection('savings')
@@ -714,7 +800,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
           amount: amount,
           date: doc['date'].toDate(),
           type: doc['type'] ?? 'Deposit',
-          transactionId: doc.id,
+          transactionId: doc['transactionId'] ?? '',
         ),
       );
     }
@@ -725,57 +811,57 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     });
   }
 
-  Future<void> _fetchLoansData() async {
-    final loansSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(memberId)
-        .collection('loans')
-        .where('status', whereIn: ['Active', 'Overdue', 'Pending'])
-        .get();
+  // Future<void> _fetchLoansData() async {
+  //   final loansSnapshot = await firestore.FirebaseFirestore.instance
+  //       .collection('users')
+  //       .doc(memberId)
+  //       .collection('loans')
+  //       .where('status', whereIn: ['Active', 'Overdue', 'Pending'])
+  //       .get();
 
-    List<Loan> loans = [];
+  //   List<Loan> loans = [];
 
-    for (var doc in loansSnapshot.docs) {
-      final payments = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(memberId)
-          .collection('loans')
-          .doc(doc.id)
-          .collection('payments')
-          .get();
+  //   for (var doc in loansSnapshot.docs) {
+  //     final payments = await firestore.FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(memberId)
+  //         .collection('loans')
+  //         .doc(doc.id)
+  //         .collection('payments')
+  //         .get();
 
-      loans.add(
-        Loan(
-          id: doc.id,
-          amount: doc['amount']?.toDouble() ?? 0,
-          remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
-          disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
-          dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
-          status: doc['status'] ?? 'Pending',
-          type: doc['type'] ?? 'Personal',
-          interestRate: doc['interestRate']?.toDouble() ?? 12.0,
-          totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
-          repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
-          payments: payments.docs
-              .map(
-                (p) => Payment(
-                  amount: p['amount']?.toDouble() ?? 0,
-                  date: p['date']?.toDate() ?? DateTime.now(),
-                  reference: p['reference'] ?? '',
-                ),
-              )
-              .toList(),
-        ),
-      );
-    }
+  //     loans.add(
+  //       Loan(
+  //         id: doc.id,
+  //         amount: doc['amount']?.toDouble() ?? 0,
+  //         remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
+  //         disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
+  //         dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
+  //         status: doc['status'] ?? 'Pending',
+  //         type: doc['type'] ?? 'Personal',
+  //         interestRate: doc['interestRate']?.toDouble() ?? 12.0,
+  //         totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
+  //         repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
+  //         payments: payments.docs
+  //             .map(
+  //               (p) => Payment(
+  //                 amount: p['amount']?.toDouble() ?? 0,
+  //                 date: p['date']?.toDate() ?? DateTime.now(),
+  //                 reference: p['reference'] ?? '',
+  //               ),
+  //             )
+  //             .toList(), monthlyPayment: 0,
+  //       ),
+  //     );
+  //   }
 
-    setState(() {
-      _loans = loans;
-    });
-  }
+  //   setState(() {
+  //     _loans = loans;
+  //   });
+  // }
 
   Future<void> _fetchNotifications() async {
-    final notificationsSnapshot = await FirebaseFirestore.instance
+    final notificationsSnapshot = await firestore.FirebaseFirestore.instance
         .collection('users')
         .doc(memberId)
         .collection('notifications')
@@ -811,40 +897,97 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   Future<void> _processDeposit(double amount, String method) async {
     try {
-      await FirebaseFirestore.instance
+      print('🔄 Processing deposit: $amount via $method');
+      print('👤 User ID: $memberId');
+      print('💰 Current balance before deposit: ${_formatCurrency(_currentSavings)}');
+
+      // Generate unique transaction ID
+      final transactionId = DateTime.now().millisecondsSinceEpoch.toString();
+      print('📝 Transaction ID: $transactionId');
+
+      // Start transaction batch for atomic operations
+      final batch = firestore.FirebaseFirestore.instance.batch();
+
+      // Add to savings collection
+      final savingsRef = firestore.FirebaseFirestore.instance
           .collection('users')
           .doc(memberId)
           .collection('savings')
-          .add({
-            'amount': amount,
-            'date': DateTime.now(),
-            'type': 'Deposit',
-            'method': method,
-          });
+          .doc(transactionId);
 
-      await FirebaseFirestore.instance
+      batch.set(savingsRef, {
+        'amount': amount,
+        'date': firestore.FieldValue.serverTimestamp(),
+        'type': 'Deposit',
+        'method': method,
+        'transactionId': transactionId,
+        'userId': memberId,
+        'status': 'Completed',
+      });
+
+      // Add to transactions collection
+      final transactionRef = firestore.FirebaseFirestore.instance
           .collection('users')
           .doc(memberId)
           .collection('transactions')
-          .add({
-            'amount': amount,
-            'date': DateTime.now(),
-            'type': 'Deposit',
-            'status': 'Completed',
-            'method': method,
-          });
+          .doc(transactionId);
 
+      batch.set(transactionRef, {
+        'amount': amount,
+        'date': firestore.FieldValue.serverTimestamp(),
+        'type': 'Deposit',
+        'status': 'Completed',
+        'method': method,
+        'transactionId': transactionId,
+        'userId': memberId,
+        'description': 'Deposit via $method',
+      });
+
+      // Commit the batch
+      await batch.commit();
+
+      print('✅ Deposit transaction committed successfully');
+      print('📊 Savings record created: ${savingsRef.id}');
+      print('📊 Transaction record created: ${transactionRef.id}');
+
+      // Update local state immediately for responsive UI
       setState(() {
         _currentSavings += amount;
       });
 
-      _fetchSavingsData();
+      print('💰 Balance updated locally: ${_formatCurrency(_currentSavings)}');
+
+      // Refresh data from database to ensure consistency
+      await _fetchSavingsData();
+      await _fetchTransactionHistory();
+
+      print('✅ Data refreshed successfully');
+      print('💰 Final balance from database: ${_formatCurrency(_currentSavings)}');
+      print('📊 Total transactions: ${_transactions.length}');
+      print('📊 Total savings records: ${_savingsHistory.length}');
+
+      // Verify the transaction was actually saved
+      final verificationDoc = await firestore.FirebaseFirestore.instance
+          .collection('users')
+          .doc(memberId)
+          .collection('transactions')
+          .doc(transactionId)
+          .get();
+
+      if (verificationDoc.exists) {
+        print('✅ Transaction verification successful: ${verificationDoc.data()}');
+      } else {
+        print('❌ Transaction verification failed: Document not found');
+      }
+
     } catch (e) {
-      _speakAndWaitForResponse("Error processing deposit. Please try again or contact support.");
+      print('❌ Error processing deposit: $e');
+      _speakAndWaitForResponse(
+        "Error processing deposit. Please try again or contact support.",
+      );
     }
   }
 
-  
   void _logout() {
     _speak("Logging out. Thank you for using our service.");
     FirebaseAuth.instance.signOut();
@@ -877,7 +1020,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _stopListening();
   }
 
-  
   @override
   void dispose() {
     _flutterTts.stop();
@@ -905,11 +1047,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.record_voice_over,
-              size: 80,
-              color: _primaryColor,
-            ),
+            Icon(Icons.record_voice_over, size: 80, color: _primaryColor),
             const SizedBox(height: 20),
             Text(
               'Voice Member Dashboard',
@@ -922,17 +1060,16 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
             const SizedBox(height: 20),
             Text(
               'Welcome, $memberName',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                color: _textSecondary,
-              ),
+              style: GoogleFonts.poppins(fontSize: 18, color: _textSecondary),
             ),
             const SizedBox(height: 40),
             Container(
               padding: const EdgeInsets.all(20),
               margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: _isListening ? Colors.green.withOpacity(0.1) : Colors.white,
+                color: _isListening
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
                   color: _isListening ? Colors.green : Colors.transparent,
@@ -985,9 +1122,4 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
   }
 }
 
-enum VoiceAction {
-  none,
-  deposit,
-  withdraw,
-  logout,
-}
+enum VoiceAction { none, deposit, withdraw, logout }
