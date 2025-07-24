@@ -8,13 +8,11 @@ import 'dart:async';
 class EmailVerificationScreen extends StatefulWidget {
   final String userEmail;
 
-  const EmailVerificationScreen({
-    super.key,
-    required this.userEmail,
-  });
+  const EmailVerificationScreen({super.key, required this.userEmail});
 
   @override
-  _EmailVerificationScreenState createState() => _EmailVerificationScreenState();
+  _EmailVerificationScreenState createState() =>
+      _EmailVerificationScreenState();
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
@@ -125,13 +123,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
           final role = userDoc.data()?['role'] ?? 'member';
 
-          // Navigate based on role
+          // Navigate based on role with logging
           if (mounted) {
+            print('Email verified successfully. User role: $role');
             if (role == 'admin') {
-              Navigator.pushReplacementNamed(context, '/admin_dashboard');
+              print('Navigating to admin dashboard');
+              Navigator.pushReplacementNamed(context, '/admin-dashboard');
             } else if (role == 'member') {
-              Navigator.pushReplacementNamed(context, '/member_dashboard');
+              print('Navigating to member dashboard');
+              Navigator.pushReplacementNamed(context, '/member-dashboard');
             } else {
+              print('Unknown role, navigating to home');
               Navigator.pushReplacementNamed(context, '/home'); // fallback
             }
           }
@@ -181,7 +183,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.mark_email_unread, size: 100, color: Color(0xFF007C91)),
+            const Icon(
+              Icons.mark_email_unread,
+              size: 100,
+              color: Color(0xFF007C91),
+            ),
             const SizedBox(height: 30),
             const Text(
               'Check Your Email',
@@ -195,7 +201,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             const SizedBox(height: 10),
             Text(
               widget.userEmail,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -207,12 +217,16 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: (isLoading || resendCooldown > 0) ? null : sendVerificationEmail,
+                onPressed: (isLoading || resendCooldown > 0)
+                    ? null
+                    : sendVerificationEmail,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)

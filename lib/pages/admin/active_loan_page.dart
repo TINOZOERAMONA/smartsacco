@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 
 class ActiveLoansPage extends StatefulWidget {
   const ActiveLoansPage({super.key});
@@ -33,75 +33,84 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
   }
 
   Future<List<Map<String, dynamic>>> _fetchMembersWithLoans() async {
-  final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
-  final List<Map<String, dynamic>> membersWithLoans = [];
-
-  for (var userDoc in usersSnapshot.docs) {
-    final userId = userDoc.id;
-    final userData = userDoc.data();
-    final fullName = userData['fullName'] ?? 'No Name';
-    final email = userData['email'] ?? 'No Email';
-    final phone = userData['phone'] ?? 'N/A';
-    final joinDate = userData['joinDate']?.toDate();
-
-    // ✅ Query loans under the user's subcollection
-    final userLoansSnapshot = await FirebaseFirestore.instance
+    final usersSnapshot = await FirebaseFirestore.instance
         .collection('users')
-        .doc(userId)
-        .collection('loans')
-        .where('status', isEqualTo: 'Approved')
         .get();
+    final List<Map<String, dynamic>> membersWithLoans = [];
 
-    final userLoans = userLoansSnapshot.docs.where((loanDoc) {
-      final loan = loanDoc.data();
-      return (loan['remainingBalance'] ?? 0) > 0;
-    }).toList();
+    for (var userDoc in usersSnapshot.docs) {
+      final userId = userDoc.id;
+      final userData = userDoc.data();
+      final fullName = userData['fullName'] ?? 'No Name';
+      final email = userData['email'] ?? 'No Email';
+      final phone = userData['phone'] ?? 'N/A';
+      final joinDate = userData['joinDate']?.toDate();
 
-    if (userLoans.isNotEmpty) {
-      final loanAmounts = userLoans.map((loan) => (loan['amount'] ?? 0).toDouble()).toList();
-      final totalLoanAmount = loanAmounts.fold(0.0, (a, b) => a + b);
-      final dueDates = userLoans
-          .map((loan) => (loan['dueDate'] as Timestamp?)?.toDate())
-          .whereType<DateTime>()
-          .toList();
+      // ✅ Query loans under the user's subcollection
+      final userLoansSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('loans')
+          .where('status', isEqualTo: 'Approved')
+          .get();
 
-      if (dueDates.isNotEmpty) {
-        final earliestDueDate = dueDates.reduce((a, b) => a.isBefore(b) ? a : b);
-        final daysLeft = earliestDueDate.difference(DateTime.now()).inDays;
+      final userLoans = userLoansSnapshot.docs.where((loanDoc) {
+        final loan = loanDoc.data();
+        return (loan['remainingBalance'] ?? 0) > 0;
+      }).toList();
 
-        membersWithLoans.add({
-          'id': userId,
-          'fullName': fullName,
-          'email': email,
-          'phone': phone,
-          'joinDate': joinDate,
-          'dueDate': earliestDueDate,
-          'daysLeft': daysLeft,
-          'totalLoanAmount': totalLoanAmount,
-          'loanCount': userLoans.length,
-        });
+      if (userLoans.isNotEmpty) {
+        final loanAmounts = userLoans
+            .map((loan) => (loan['amount'] ?? 0).toDouble())
+            .toList();
+        final totalLoanAmount = loanAmounts.fold(0.0, (a, b) => a + b);
+        final dueDates = userLoans
+            .map((loan) => (loan['dueDate'] as Timestamp?)?.toDate())
+            .whereType<DateTime>()
+            .toList();
+
+        if (dueDates.isNotEmpty) {
+          final earliestDueDate = dueDates.reduce(
+            (a, b) => a.isBefore(b) ? a : b,
+          );
+          final daysLeft = earliestDueDate.difference(DateTime.now()).inDays;
+
+          membersWithLoans.add({
+            'id': userId,
+            'fullName': fullName,
+            'email': email,
+            'phone': phone,
+            'joinDate': joinDate,
+            'dueDate': earliestDueDate,
+            'daysLeft': daysLeft,
+            'totalLoanAmount': totalLoanAmount,
+            'loanCount': userLoans.length,
+          });
+        }
       }
     }
+
+    // Sort by days remaining (ascending)
+    membersWithLoans.sort(
+      (a, b) => (a['daysLeft'] as int).compareTo(b['daysLeft'] as int),
+    );
+    return membersWithLoans;
   }
 
-  // Sort by days remaining (ascending)
-  membersWithLoans.sort((a, b) => (a['daysLeft'] as int).compareTo(b['daysLeft'] as int));
-  return membersWithLoans;
-}
-
-
   Widget _buildMemberCard(Map<String, dynamic> member) {
-    final dueDateFormatted = DateFormat('MMM dd, yyyy').format(member['dueDate']);
+    final dueDateFormatted = DateFormat(
+      'MMM dd, yyyy',
+    ).format(member['dueDate']);
     final daysLeft = member['daysLeft'];
     final isOverdue = daysLeft < 0;
-    final statusColor = isOverdue ? Colors.red : (daysLeft <= 7 ? Colors.orange : Colors.green);
+    final statusColor = isOverdue
+        ? Colors.red
+        : (daysLeft <= 7 ? Colors.orange : Colors.green);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _navigateToMemberDetails(member['id']),
@@ -121,15 +130,18 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.2),
+                      color: statusColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: statusColor),
                     ),
                     child: Text(
-                      isOverdue 
-                          ? 'OVERDUE ${-daysLeft}d' 
+                      isOverdue
+                          ? 'OVERDUE ${-daysLeft}d'
                           : '$daysLeft days left',
                       style: TextStyle(
                         color: statusColor,
@@ -145,8 +157,11 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
               _buildDetailRow('Due Date', dueDateFormatted),
               _buildDetailRow('Total Loans', '${member['loanCount']}'),
               _buildDetailRow(
-                'Total Amount', 
-                NumberFormat.currency(locale: 'en_UG', symbol: 'UGX').format(member['totalLoanAmount']),
+                'Total Amount',
+                NumberFormat.currency(
+                  locale: 'en_UG',
+                  symbol: 'UGX',
+                ).format(member['totalLoanAmount']),
               ),
               const SizedBox(height: 8),
               Row(
@@ -181,20 +196,14 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -211,23 +220,42 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
   }
 
   Future<void> _sendReminderEmail(Map<String, dynamic> member) async {
-    // TODO: Implement email sending logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Reminder email sent to ${member['email']}'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    final email = member['email'];
+    final subject = Uri.encodeComponent('Loan Repayment Reminder');
+    final body = Uri.encodeComponent(
+      'Dear ${member['fullName']},%0A%0AThis is a reminder to repay your outstanding loan. Please contact the SACCO office if you have any questions.%0A%0AThank you.',
     );
+    final gmailUrl = 'mailto:$email?subject=$subject&body=$body';
+
+    if (await canLaunchUrl(Uri.parse(gmailUrl))) {
+      await launchUrl(Uri.parse(gmailUrl));
+      if (!mounted) return;
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not open email app for ${member['email']}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _callMember(Map<String, dynamic> member) async {
-    // TODO: Implement phone call functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Calling ${member['phone']}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final phone = member['phone'];
+    final telUrl = 'tel:$phone';
+    if (await canLaunchUrl(Uri.parse(telUrl))) {
+      await launchUrl(Uri.parse(telUrl));
+      if (!mounted) return;
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not initiate call to $phone'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _refreshData() async {
@@ -243,10 +271,7 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
         title: const Text('Active Loan Members'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _refreshData),
         ],
       ),
       body: Column(
@@ -271,13 +296,17 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (snapshot.hasError) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
                         const SizedBox(height: 16),
                         const Text(
                           'Failed to load members',
@@ -298,20 +327,30 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                     ),
                   );
                 }
-                
+
                 final members = snapshot.data!;
                 final filteredMembers = members.where((member) {
-                  return member['fullName'].toString().toLowerCase().contains(_searchQuery) ||
-                      member['email'].toString().toLowerCase().contains(_searchQuery) ||
-                      member['phone'].toString().toLowerCase().contains(_searchQuery);
+                  return member['fullName'].toString().toLowerCase().contains(
+                        _searchQuery,
+                      ) ||
+                      member['email'].toString().toLowerCase().contains(
+                        _searchQuery,
+                      ) ||
+                      member['phone'].toString().toLowerCase().contains(
+                        _searchQuery,
+                      );
                 }).toList();
-                
+
                 if (filteredMembers.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.people_alt_outlined, size: 48, color: Colors.grey),
+                        const Icon(
+                          Icons.people_alt_outlined,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           _searchQuery.isEmpty
@@ -323,13 +362,13 @@ class _ActiveLoansPageState extends State<ActiveLoansPage> {
                     ),
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: _refreshData,
                   child: ListView.builder(
                     padding: const EdgeInsets.only(bottom: 16),
                     itemCount: filteredMembers.length,
-                    itemBuilder: (context, index) => 
+                    itemBuilder: (context, index) =>
                         _buildMemberCard(filteredMembers[index]),
                   ),
                 );

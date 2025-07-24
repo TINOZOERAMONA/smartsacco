@@ -15,34 +15,52 @@ import 'firebase_options.dart';
 import 'package:smartsacco/pages/voicewelcome.dart';
 import 'package:smartsacco/pages/voiceregister.dart';
 import 'package:smartsacco/pages/voicelogin.dart';
+
 import 'package:smartsacco/utils/logger.dart';
+import 'package:smartsacco/services/notification_service.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-
+import 'package:smartsacco/pages/payment_status_screen.dart';
+import 'package:smartsacco/pages/settings_page.dart';
+import 'package:smartsacco/services/user_preferences_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(const LoadingApp()); // Show loading UI quickly
 
   try {
     setupLogging();
-
     await Firebase.initializeApp(
       options: kIsWeb
           ? DefaultFirebaseOptions.web
           : DefaultFirebaseOptions.currentPlatform,
     );
+    await NotificationService().initialize();
+    await UserPreferencesService().initialize();
 
-    runApp(const SaccoDashboardApp());
+    runApp(const SaccoDashboardApp()); // Replace with real app
   } catch (e, stack) {
     print("🔥 Error during app startup: $e");
     print("📌 Stack trace: $stack");
   }
 }
 
+class LoadingApp extends StatelessWidget {
+  const LoadingApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
+
+
 class SaccoDashboardApp extends StatefulWidget {
   const SaccoDashboardApp({super.key});
-
   @override
   State<SaccoDashboardApp> createState() => _SaccoDashboardAppState();
 }
@@ -59,9 +77,9 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
     debugPrint("SplashPage loaded ✅");
   }
 
+  // Modularized deep link initialization
   void _initializeDeepLinks() {
     _appLinks = AppLinks();
-
     _linkSubscription = _appLinks.uriLinkStream.listen(
       (Uri uri) {
         _handleIncomingLink(uri.toString());
@@ -78,14 +96,14 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
     super.dispose();
   }
 
+  // Modularized deep link handler
   void _handleIncomingLink(String link) {
     try {
       final uri = Uri.parse(link);
-
-      if (uri.path.contains('reset') || uri.queryParameters.containsKey('oobCode')) {
+      if (uri.path.contains('reset') ||
+          uri.queryParameters.containsKey('oobCode')) {
         final resetCode = uri.queryParameters['oobCode'];
         final mode = uri.queryParameters['mode'];
-
         if (mode == 'resetPassword' && resetCode != null) {
           navigatorKey.currentState?.pushNamed(
             '/custom-password-reset',
@@ -119,37 +137,42 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/login': (context) => const LoginPage(),
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/register': (context) => const RegisterPage(),
+        // Voice-first routes for blind users
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
         '/member-dashboard': (context) => const MemberDashboard(),
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
-        //'/member_details': (context) => const MemberDetailsPage(),
         '/blindmember': (context) => const VoiceMemberDashboard(),
-
+        '/settings': (context) => const SettingsPage(),
+        '/email_verification': (context) => EmailVerificationScreen(
+          userEmail:
+              (ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?)?['email'] ??
+              '',
+        ),
       },
       onGenerateRoute: (settings) {
         final args = settings.arguments as Map<String, dynamic>?;
-
         switch (settings.name) {
           case '/verification':
           case '/verify-email':
             return MaterialPageRoute(
-              builder: (context) => EmailVerificationScreen(
-                userEmail: args?['userEmail'] ?? '',
-              ),
+              builder: (context) =>
+                  EmailVerificationScreen(userEmail: args?['userEmail'] ?? ''),
             );
-
           case '/custom-password-reset':
             final resetCode = args?['resetCode'] as String?;
             if (resetCode != null) {
               return MaterialPageRoute(
-                builder: (context) => CustomPasswordResetPage(resetCode: resetCode),
+                builder: (context) =>
+                    CustomPasswordResetPage(resetCode: resetCode),
               );
             }
-            return MaterialPageRoute(builder: (context) => ForgotPasswordPage());
-
+            return MaterialPageRoute(
+              builder: (context) => ForgotPasswordPage(),
+            );
           case '/member_details':
             final userId = args?['userId'] as String?;
             if (userId != null) {
@@ -158,16 +181,36 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
               );
             }
             return _errorRoute("Missing userId for member details");
-
+          case '/payment-status':
+            final transactionId = args?['transactionId'] as String?;
+            final amount = args?['amount'] as double?;
+            final method = args?['method'] as String?;
+            final type = args?['type'] as String?;
+            if (transactionId != null &&
+                amount != null &&
+                method != null &&
+                type != null) {
+              return MaterialPageRoute(
+                builder: (context) => PaymentStatusScreen(
+                  transactionId: transactionId,
+                  amount: amount,
+                  method: method,
+                  type: type,
+                ),
+              );
+            }
+            return _errorRoute("Missing payment status parameters");
           default:
-            return _errorRoute("Route not found: ${settings.name}");
+            // Fallback for unknown routes - redirect to home
+            print('Unknown route: ${settings.name}, redirecting to home');
+            return MaterialPageRoute(builder: (context) => const HomePage());
         }
       },
       debugShowCheckedModeBanner: false,
     );
   }
 
-
+  // Modularized error route
   Route _errorRoute(String message) {
     return MaterialPageRoute(
       builder: (context) => Scaffold(
@@ -178,7 +221,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
   }
 }
 
-// Optional helper class for testing deep links
+// Helper class for deep link testing (unchanged)
 class DeepLinkHandler {
   static final DeepLinkHandler _instance = DeepLinkHandler._internal();
   factory DeepLinkHandler() => _instance;

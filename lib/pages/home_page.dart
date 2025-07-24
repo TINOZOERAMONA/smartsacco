@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:smartsacco/services/user_preferences_service.dart';
+import 'package:smartsacco/utils/constants.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final UserPreferencesService _prefsService = UserPreferencesService();
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +32,7 @@ class HomePage extends StatelessWidget {
                       color: Colors.black12,
                       blurRadius: 16,
                       offset: Offset(0, 8),
-                    )
+                    ),
                   ],
                 ),
                 child: Column(
@@ -41,17 +50,16 @@ class HomePage extends StatelessWidget {
                     const Text(
                       "Track your SACCO savings\nfrom anywhere, anytime.",
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF007C91),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 36, vertical: 14),
+                          horizontal: 36,
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
@@ -69,7 +77,9 @@ class HomePage extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF007C91),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 40, vertical: 14),
+                          horizontal: 40,
+                          vertical: 14,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
@@ -82,6 +92,26 @@ class HomePage extends StatelessWidget {
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade200,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 36,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      onPressed: () {
+                        _showAccessibilityOptions(context);
+                      },
+                      child: const Text(
+                        "Accessibility Options",
+                        style: TextStyle(color: Colors.black87, fontSize: 16),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -90,5 +120,58 @@ class HomePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showAccessibilityOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accessibility Options'),
+        content: const Text(
+          'Choose your preferred interaction mode. You can change this later in Settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _setAccessibilityMode(AccessibilityModes.normal);
+            },
+            child: const Text('Normal Mode'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _setAccessibilityMode(AccessibilityModes.voice);
+            },
+            child: const Text('Voice Mode'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _setAccessibilityMode(AccessibilityModes.blind);
+            },
+            child: const Text('Blind Mode'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _setAccessibilityMode(String mode) async {
+    await _prefsService.setAccessibilityMode(mode);
+
+    if (mode != AccessibilityModes.normal) {
+      await _prefsService.setVoiceEnabled(true);
+      await _prefsService.setAutoStartVoice(true);
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Accessibility mode set to: $mode'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 }

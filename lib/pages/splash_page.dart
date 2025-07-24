@@ -13,8 +13,7 @@ class SplashPage extends StatefulWidget {
   _SplashPageState createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with TickerProviderStateMixin {
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   FlutterTts flutterTts = FlutterTts();
   stt.SpeechToText speech = stt.SpeechToText();
   bool isListening = false;
@@ -39,7 +38,6 @@ class _SplashPageState extends State<SplashPage>
     _startWelcomeSequence();
   }
 
-
   void _initAnimations() {
     _fadeController = AnimationController(
       duration: Duration(seconds: 2),
@@ -54,9 +52,10 @@ class _SplashPageState extends State<SplashPage>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
@@ -72,7 +71,7 @@ class _SplashPageState extends State<SplashPage>
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
-    
+
     // Set up TTS completion handler
     flutterTts.setCompletionHandler(() {
       if (mounted) {
@@ -90,7 +89,9 @@ class _SplashPageState extends State<SplashPage>
   Future<void> _requestPermissions() async {
     var status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
-      _showError("Microphone permission is required for voice navigation. Please tap to continue.");
+      _showError(
+        "Microphone permission is required for voice navigation. Please tap to continue.",
+      );
     }
   }
 
@@ -129,7 +130,7 @@ class _SplashPageState extends State<SplashPage>
           setState(() {
             isListening = val == 'listening';
           });
-          
+
           // Handle different status scenarios
           if (val == 'done' || val == 'notListening') {
             _handleListeningComplete();
@@ -153,7 +154,7 @@ class _SplashPageState extends State<SplashPage>
           isListening = true;
           spokenText = "";
         });
-        
+
         // Start pulse animation for microphone
         _pulseController.repeat(reverse: true);
       }
@@ -168,8 +169,8 @@ class _SplashPageState extends State<SplashPage>
             _logger.info('Recognized: $spokenText'); // Debug log
 
             // Check for trigger words
-            if (spokenText.contains('one') || 
-                spokenText.contains('1') || 
+            if (spokenText.contains('one') ||
+                spokenText.contains('1') ||
                 spokenText.contains('won')) {
               _handleVoiceNavigation();
             }
@@ -179,7 +180,8 @@ class _SplashPageState extends State<SplashPage>
         pauseFor: Duration(seconds: 5), // Increased pause time
         partialResults: true, // Enable partial results
         cancelOnError: false, // Don't cancel on minor errors
-        listenMode: stt.ListenMode.confirmation, // Better for command recognition
+        listenMode:
+            stt.ListenMode.confirmation, // Better for command recognition
       );
     } else {
       _showError("Speech recognition not available. Please tap to continue.");
@@ -188,42 +190,52 @@ class _SplashPageState extends State<SplashPage>
 
   void _handleListeningComplete() {
     _pulseController.stop();
-    
+
     // If we haven't detected the trigger word and haven't exceeded retries
-    if (!spokenText.contains('one') && 
-        !spokenText.contains('1') && 
+    if (!spokenText.contains('one') &&
+        !spokenText.contains('1') &&
         !spokenText.contains('won') &&
         retryCount < maxRetries) {
-      
       retryCount++;
-      
-      String retryMessage = retryCount == 1 
+
+      String retryMessage = retryCount == 1
           ? "I didn't catch that. Please say 'one' clearly to continue with voice navigation."
-          : retryCount == 2 
-              ? "Let's try again. Say 'one' to continue with voice navigation."
-              : "One more time. Say 'one' for voice navigation, or tap the screen to continue normally.";
-      
+          : retryCount == 2
+          ? "Let's try again. Say 'one' to continue with voice navigation."
+          : "One more time. Say 'one' for voice navigation, or tap the screen to continue normally.";
+
       _speakAndRetry(retryMessage);
     } else if (retryCount >= maxRetries) {
-      _speakAndRetry("No problem. You can tap anywhere on the screen to continue.");
+      _speakAndRetry(
+        "No problem. You can tap anywhere on the screen to continue.",
+      );
     }
   }
 
   void _handleSpeechError(String errorMsg) {
     _pulseController.stop();
-    
+
     _logger.warning('Speech error details: $errorMsg'); // Debug log
-    
+
     // Handle specific error types
     if (errorMsg.contains('network') || errorMsg.contains('connection')) {
-      _speakAndRetry("Network issue detected. Please check your connection and try saying 'one' again.");
-    } else if (errorMsg.contains('no-speech') || errorMsg.contains('speech-timeout')) {
-      _speakAndRetry("I didn't hear anything. Please say 'one' to continue with voice navigation.");
+      _speakAndRetry(
+        "Network issue detected. Please check your connection and try saying 'one' again.",
+      );
+    } else if (errorMsg.contains('no-speech') ||
+        errorMsg.contains('speech-timeout')) {
+      _speakAndRetry(
+        "I didn't hear anything. Please say 'one' to continue with voice navigation.",
+      );
     } else if (retryCount < maxRetries) {
       retryCount++;
-      _speakAndRetry("Let's try again. Say 'one' to continue with voice navigation.");
+      _speakAndRetry(
+        "Let's try again. Say 'one' to continue with voice navigation.",
+      );
     } else {
-      _speakAndRetry("Voice recognition is having trouble. Please tap the screen to continue.");
+      _speakAndRetry(
+        "Voice recognition is having trouble. Please tap the screen to continue.",
+      );
     }
   }
 
@@ -231,7 +243,7 @@ class _SplashPageState extends State<SplashPage>
     setState(() {
       isSpeaking = true;
     });
-    
+
     await flutterTts.speak(message);
     // TTS completion handler will trigger _startListening()
   }
@@ -242,14 +254,14 @@ class _SplashPageState extends State<SplashPage>
         isListening = false;
       });
     }
-    
+
     _pulseController.stop();
     speech.stop();
 
     setState(() {
       isSpeaking = true;
     });
-    
+
     flutterTts.setCompletionHandler(() {
       if (mounted) {
         setState(() {
@@ -265,7 +277,7 @@ class _SplashPageState extends State<SplashPage>
     // Stop all audio activities
     speech.stop();
     flutterTts.stop();
-    
+
     Future.delayed(Duration(seconds: 2), () {
       if (mounted) {
         if (accessibilityMode) {
@@ -281,10 +293,7 @@ class _SplashPageState extends State<SplashPage>
     flutterTts.speak(message);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: Duration(seconds: 3),
-        ),
+        SnackBar(content: Text(message), duration: Duration(seconds: 3)),
       );
     }
   }
@@ -341,10 +350,28 @@ class _SplashPageState extends State<SplashPage>
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.account_balance,
-                          size: 60,
-                          color: Colors.white,
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/smartsacco.png',
+                            width: 110,
+                            height: 110,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 110,
+                                height: 110,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.account_balance,
+                                  size: 55,
+                                  color: Colors.blue.shade600,
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),

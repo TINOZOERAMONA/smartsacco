@@ -62,6 +62,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
           .doc(memberId)
           .get();
 
+      if (!mounted) return;
+
       setState(() {
         memberName = memberDoc['fullName'] ?? 'Member';
         memberEmail = memberDoc['email'] ?? 'member@sacco.com';
@@ -80,6 +82,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
         .collection('savings')
         .orderBy('date', descending: true)
         .get();
+
+    if (!mounted) return;
 
     double totalSavings = 0;
     List<SavingsHistory> history = [];
@@ -110,55 +114,70 @@ class _MemberDashboardState extends State<MemberDashboard> {
         .collection('users')
         .doc(memberId)
         .collection('loans')
-        .where('status', whereIn: ['Active', 'Overdue', 'Pending', 'Pending Approval', 'Approved', 'Rejected'])
+        .where(
+          'status',
+          whereIn: [
+            'Active',
+            'Overdue',
+            'Pending',
+            'Pending Approval',
+            'Approved',
+            'Rejected',
+          ],
+        )
         .snapshots()
         .listen((snapshot) async {
-      List<Loan> loans = [];
+          if (!mounted) return;
 
-      for (var doc in snapshot.docs) {
-        final status = doc['status'];
-        // Map "Approved" to "Active" for consistent display
-        final displayStatus = status == 'Approved' ? 'Active' : status;
+          List<Loan> loans = [];
 
-        final payments = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(memberId)
-            .collection('loans')
-            .doc(doc.id)
-            .collection('payments')
-            .get();
+          for (var doc in snapshot.docs) {
+            final status = doc['status'];
+            final displayStatus = status == 'Approved' ? 'Active' : status;
 
-        loans.add(
-          Loan(
-            id: doc.id,
-            amount: doc['amount']?.toDouble() ?? 0,
-            remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
-            disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
-            dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
-            status: displayStatus,
-            type: doc['type'] ?? 'Personal',
-            interestRate: doc['interestRate']?.toDouble() ?? 12.0,
-            totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
-            repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
-            payments: payments.docs
-                .map(
-                  (p) => Payment(
-                    amount: p['amount']?.toDouble() ?? 0,
-                    date: p['date']?.toDate() ?? DateTime.now(),
-                    reference: p['reference'] ?? '',
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      }
+            final payments = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(memberId)
+                .collection('loans')
+                .doc(doc.id)
+                .collection('payments')
+                .get();
 
-      if (mounted) {
-        setState(() {
-          _loans = loans;
+            if (!mounted) return;
+
+            loans.add(
+              Loan(
+                id: doc.id,
+                amount: doc['amount']?.toDouble() ?? 0,
+                remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
+                disbursementDate:
+                    doc['disbursementDate']?.toDate() ?? DateTime.now(),
+                dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
+                status: displayStatus,
+                type: doc['type'] ?? 'Personal',
+                interestRate: doc['interestRate']?.toDouble() ?? 12.0,
+                totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
+                repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
+                monthlyPayment: doc['monthlyPayment']?.toDouble() ?? 0,
+                payments: payments.docs
+                    .map(
+                      (p) => Payment(
+                        amount: p['amount']?.toDouble() ?? 0,
+                        date: p['date']?.toDate() ?? DateTime.now(),
+                        reference: p['reference'] ?? '',
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
+          }
+
+          if (mounted) {
+            setState(() {
+              _loans = loans;
+            });
+          }
         });
-      }
-    });
   }
 
   Future<void> _fetchNotifications() async {
@@ -169,6 +188,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
         .orderBy('date', descending: true)
         .limit(10)
         .get();
+
+    if (!mounted) return;
 
     int unread = 0;
     List<AppNotification> notifications = [];
@@ -185,7 +206,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
           date: doc['date']?.toDate() ?? DateTime.now(),
           type: NotificationType.values[doc['type'] ?? 0],
           isRead: isRead,
-          actionUrl: doc['actionUrl'],
+          actionUrl: doc['actionUrl'] ?? null,
         ),
       );
     }
@@ -215,6 +236,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
           memberId: memberId,
           memberSavings: _currentSavings,
           onSubmit: (application) async {
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
             try {
               final amount = application['amount'];
               final interestRate = application['interestRate'];
@@ -246,6 +268,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
                     'applicationDate': DateTime.now(),
                   });
 
+              if (!mounted) return;
+
               await FirebaseFirestore.instance
                   .collection('users')
                   .doc(memberId)
@@ -259,14 +283,17 @@ class _MemberDashboardState extends State<MemberDashboard> {
                     'isRead': false,
                   });
 
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return;
+
+              scaffoldMessenger.showSnackBar(
                 const SnackBar(content: Text('Loan application submitted!')),
               );
 
               _fetchLoansData();
               _fetchNotifications();
             } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return;
+              scaffoldMessenger.showSnackBar(
                 SnackBar(content: Text('Error submitting application: $e')),
               );
             }
@@ -284,6 +311,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
           amount: loan.nextPaymentAmount,
           onPaymentComplete: (success) async {
             if (success) {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               try {
                 final paymentAmount = loan.nextPaymentAmount;
                 final paymentRef = await FirebaseFirestore.instance
@@ -299,6 +327,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
                           'MOMO-${DateTime.now().millisecondsSinceEpoch}',
                     });
 
+                if (!mounted) return;
+
                 await FirebaseFirestore.instance
                     .collection('users')
                     .doc(memberId)
@@ -310,6 +340,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
                         const Duration(days: 30),
                       ),
                     });
+
+                if (!mounted) return;
 
                 await FirebaseFirestore.instance
                     .collection('users')
@@ -324,6 +356,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
                       'loanId': loan.id,
                       'paymentId': paymentRef.id,
                     });
+
+                if (!mounted) return;
 
                 await FirebaseFirestore.instance
                     .collection('users')
@@ -341,11 +375,13 @@ class _MemberDashboardState extends State<MemberDashboard> {
                 _fetchLoansData();
                 _fetchNotifications();
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('Payment successful!')),
                 );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+                scaffoldMessenger.showSnackBar(
                   SnackBar(content: Text('Error recording payment: $e')),
                 );
               }
@@ -379,7 +415,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   double _calculateTotalDue() {
-    return _loans.where((loan) => loan.status == 'Active' || loan.status == 'Overdue')
+    return _loans
+        .where((loan) => loan.status == 'Active' || loan.status == 'Overdue')
         .fold(0, (acc, loan) => acc + loan.nextPaymentAmount);
   }
 
@@ -436,8 +473,15 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Map<String, int> _getLoanStatusCounts() {
     return {
-      'active': _loans.where((loan) => loan.status == 'Active' || loan.status == 'Approved').length,
-      'pending': _loans.where((loan) => loan.status == 'Pending' || loan.status == 'Pending Approval').length,
+      'active': _loans
+          .where((loan) => loan.status == 'Active' || loan.status == 'Approved')
+          .length,
+      'pending': _loans
+          .where(
+            (loan) =>
+                loan.status == 'Pending' || loan.status == 'Pending Approval',
+          )
+          .length,
       'rejected': _loans.where((loan) => loan.status == 'Rejected').length,
       'overdue': _loans.where((loan) => loan.status == 'Overdue').length,
     };
@@ -460,7 +504,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   Widget _buildHomeScreen(int activeLoans, int overdueLoans, double totalDue) {
     final loanCounts = _getLoanStatusCounts();
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -502,7 +546,11 @@ class _MemberDashboardState extends State<MemberDashboard> {
     );
   }
 
-  Widget _buildStatsGrid(double savings, Map<String, int> loanCounts, double totalDue) {
+  Widget _buildStatsGrid(
+    double savings,
+    Map<String, int> loanCounts,
+    double totalDue,
+  ) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -591,7 +639,10 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
   void _showPendingLoans() {
     final pendingLoans = _loans
-        .where((loan) => loan.status == 'Pending' || loan.status == 'Pending Approval')
+        .where(
+          (loan) =>
+              loan.status == 'Pending' || loan.status == 'Pending Approval',
+        )
         .toList();
     showModalBottomSheet(
       context: context,
@@ -738,8 +789,8 @@ class _MemberDashboardState extends State<MemberDashboard> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isOverdue
-            ? _overdueColor.withOpacity(0.1)
-            : _activeLoansColor.withOpacity(0.1),
+            ? _overdueColor.withValues(alpha: 0.1)
+            : _activeLoansColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isOverdue ? _overdueColor : _activeLoansColor,
@@ -865,13 +916,13 @@ class _MemberDashboardState extends State<MemberDashboard> {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'completed':
-        return Colors.green.withOpacity(0.2);
+        return Colors.green.withValues(alpha: 0.2);
       case 'pending':
-        return Colors.orange.withOpacity(0.2);
+        return Colors.orange.withValues(alpha: 0.2);
       case 'failed':
-        return Colors.red.withOpacity(0.2);
+        return Colors.red.withValues(alpha: 0.2);
       default:
-        return Colors.grey.withOpacity(0.2);
+        return Colors.grey.withValues(alpha: 0.2);
     }
   }
 
@@ -1035,11 +1086,11 @@ class _MemberDashboardState extends State<MemberDashboard> {
             'method': method,
           });
 
-      if (mounted) {
-        setState(() {
-          _currentSavings += amount;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _currentSavings += amount;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1049,9 +1100,10 @@ class _MemberDashboardState extends State<MemberDashboard> {
 
       _fetchSavingsData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error processing deposit: $e')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error processing deposit: $e')));
     }
   }
 
@@ -1307,7 +1359,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
       ],
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final activeLoans = _loans.where((loan) => loan.status == 'Active').length;
@@ -1453,8 +1505,7 @@ class SavingsDetailsScreen extends StatelessWidget {
 class LoansListScreen extends StatelessWidget {
   final List<Loan> loans;
   final String title;
-  final void Function(Loan)? onPayment; 
-
+  final void Function(Loan)? onPayment;
 
   const LoansListScreen({
     super.key,
@@ -1761,6 +1812,3 @@ class Transaction {
     this.paymentId,
   });
 }
-
-
-// ... [Keep all your existing model classes and other screens] ...

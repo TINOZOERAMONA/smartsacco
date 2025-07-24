@@ -246,7 +246,6 @@ class _VoiceLoginPageState extends State<VoiceLoginPage>
       loginAttempts = 0;
       
       Future.delayed(Duration(seconds: 3), () {
-        
         if (mounted) {
           // Pass user data to the dashboard
           Navigator.pushReplacementNamed(

@@ -8,10 +8,10 @@ class LoanApprovalPage extends StatefulWidget {
   final Map<String, dynamic> loanData;
 
   const LoanApprovalPage({
-    Key? key,
+    super.key,
     required this.loanRef,
     required this.loanData,
-  }) : super(key: key);
+  });
 
   @override
   State<LoanApprovalPage> createState() => _LoanApprovalPageState();
@@ -38,7 +38,7 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
     required String notes,
   }) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final decisionBy = FirebaseAuth.instance.currentUser?.uid ?? 'admin';
 
     try {
@@ -48,6 +48,8 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
         'decisionBy': decisionBy,
         'notes': notes,
       });
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -59,6 +61,7 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
 
       Navigator.pop(context);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -73,9 +76,7 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -119,10 +120,7 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
               value is Timestamp
                   ? DateFormat('MMM d, yyyy').format(value.toDate())
                   : value.toString(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -175,22 +173,46 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
           child: Column(
             children: [
               _buildInfoCard('Loan Details', [
-                _buildInfoRow('Amount', '\$${data['amount']?.toStringAsFixed(2)}'),
+                _buildInfoRow(
+                  'Amount',
+                  '\$${data['amount']?.toStringAsFixed(2)}',
+                ),
                 _buildInfoRow('Purpose', data['purpose'] ?? 'N/A'),
                 _buildInfoRow('Type', data['type'] ?? 'N/A'),
-                _buildInfoRow('Status', loanStatus.isEmpty ? 'Pending' : loanStatus),
-                _buildInfoRow('Application Date', data['applicationDate'] ?? 'N/A'),
+                _buildInfoRow(
+                  'Status',
+                  loanStatus.isEmpty ? 'Pending' : loanStatus,
+                ),
+                _buildInfoRow(
+                  'Application Date',
+                  data['applicationDate'] ?? 'N/A',
+                ),
               ]),
-              
+
               _buildInfoCard('Payment Information', [
-                _buildInfoRow('Interest Rate', '${data['interestRate']?.toStringAsFixed(2)}%'),
-                _buildInfoRow('Monthly Payment', '\$${data['monthlyPayment']?.toStringAsFixed(2)}'),
-                _buildInfoRow('Total Repayment', '\$${data['totalRepayment']?.toStringAsFixed(2)}'),
-                _buildInfoRow('Remaining Balance', '\$${data['remainingBalance']?.toStringAsFixed(2)}'),
-                _buildInfoRow('Disbursement Date', data['disbursementDate'] ?? 'N/A'),
+                _buildInfoRow(
+                  'Interest Rate',
+                  '${data['interestRate']?.toStringAsFixed(2)}%',
+                ),
+                _buildInfoRow(
+                  'Monthly Payment',
+                  '\$${data['monthlyPayment']?.toStringAsFixed(2)}',
+                ),
+                _buildInfoRow(
+                  'Total Repayment',
+                  '\$${data['totalRepayment']?.toStringAsFixed(2)}',
+                ),
+                _buildInfoRow(
+                  'Remaining Balance',
+                  '\$${data['remainingBalance']?.toStringAsFixed(2)}',
+                ),
+                _buildInfoRow(
+                  'Disbursement Date',
+                  data['disbursementDate'] ?? 'N/A',
+                ),
                 _buildInfoRow('Due Date', data['dueDate'] ?? 'N/A'),
               ]),
-              
+
               _buildInfoCard('Decision', [
                 if (isLocked)
                   Container(
@@ -202,12 +224,12 @@ class _LoanApprovalPageState extends State<LoanApprovalPage> {
                     child: Row(
                       children: [
                         Icon(
-                          loanStatus.toLowerCase() == 'approved' 
-                            ? Icons.check_circle 
-                            : Icons.cancel,
-                          color: loanStatus.toLowerCase() == 'approved' 
-                            ? Colors.green 
-                            : Colors.red,
+                          loanStatus.toLowerCase() == 'approved'
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          color: loanStatus.toLowerCase() == 'approved'
+                              ? Colors.green
+                              : Colors.red,
                         ),
                         const SizedBox(width: 12),
                         Expanded(

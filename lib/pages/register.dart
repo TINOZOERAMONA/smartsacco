@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
 import 'package:smartsacco/pages/emailverification_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -25,8 +26,6 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
   bool _isRegistering = false;
   bool _isPasswordObscured = true;
 
- 
-
   @override
   void dispose() {
     _fullNameController.dispose();
@@ -40,9 +39,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
     if (!(_formKey.currentState?.validate() ?? false)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Please fill all required fields."),
-          ),
+          const SnackBar(content: Text("Please fill all required fields.")),
         );
       }
       return;
@@ -106,10 +103,7 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
@@ -130,58 +124,178 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 600;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register SACCO'),
-        backgroundColor: const Color(0xFF007C91),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: screenSize.height - MediaQuery.of(context).padding.top,
+            ),
+            child: IntrinsicHeight(
+              child: Column(
+                children: [
+                  // Header Section
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(isSmallScreen ? 24.0 : 32.0),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF007C91), Color(0xFF005A6B)],
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        // Logo/Icon
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.person_add,
+                            size: 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Join SmartSacco',
+                          style: GoogleFonts.poppins(
+                            fontSize: isSmallScreen ? 28 : 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Create your account to get started',
+                          style: GoogleFonts.poppins(
+                            fontSize: isSmallScreen ? 14 : 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+
+                  // Form Section
+                  Expanded(
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(isSmallScreen ? 24.0 : 32.0),
         child: Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          child: ListView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildTextField(_fullNameController, "Full Names"),
-              const SizedBox(height: 12),
+                            // Full Name Field
+                            _buildTextField(
+                              _fullNameController,
+                              "Full Names",
+                              Icons.person_outline,
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Email Field
               _buildTextField(
                 _emailController,
-                'Email',
+                              'Email Address',
+                              Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 12),
+
+                            const SizedBox(height: 20),
+
+                            // Phone Field
               _buildTextField(
                 _phoneController,
-                'Telephone Number',
+                              'Phone Number',
+                              Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
-                helperText: 'Hint: 0760500677',
-              ),
-              const SizedBox(height: 12),
+                              helperText: 'Format: 0760500677',
+                            ),
 
-              TextFormField(
-                keyboardType: TextInputType.text,
+                            const SizedBox(height: 20),
+
+                            // Password Field
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: TextFormField(
                 controller: _passwordController,
+                                obscureText: _isPasswordObscured,
+                                style: GoogleFonts.poppins(fontSize: 16),
                 decoration: InputDecoration(
-                  labelText: 'Pin Password',
-                  border: const OutlineInputBorder(),
-                  helperText: 'Password must be at least 6 digits',
+                                  labelText: 'Password',
+                                  labelStyle: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                  helperText:
+                                      'Password must be at least 6 characters',
+                                  helperStyle: GoogleFonts.poppins(
+                                    color: Colors.grey[500],
+                                    fontSize: 12,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.lock_outlined,
+                                    color: const Color(0xFF007C91),
+                                  ),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordObscured
                           ? Icons.visibility_off
                           : Icons.visibility,
+                                      color: const Color(0xFF007C91),
                     ),
                     onPressed: () {
                       setState(() {
-                        _isPasswordObscured = !_isPasswordObscured;
+                                        _isPasswordObscured =
+                                            !_isPasswordObscured;
                       });
                     },
                   ),
-                ),
-                obscureText: _isPasswordObscured,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 16,
+                                  ),
+                                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a pin password';
+                                    return 'Please enter a password';
                   }
                   if (value.length < 6) {
                     return 'Password must be at least 6 characters';
@@ -189,85 +303,264 @@ class _RegisterSaccoPageState extends State<RegisterPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // Role Selection
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: DropdownButtonFormField<String>(
                 value: _selectedRole,
-                decoration: const InputDecoration(
+                                style: GoogleFonts.poppins(fontSize: 16),
+                                decoration: InputDecoration(
                   labelText: 'Role',
-                  border: OutlineInputBorder(),
+                                  labelStyle: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.work_outline,
+                                    color: const Color(0xFF007C91),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 16,
+                                  ),
                 ),
                 items: <String>['Member', 'Admin']
-                    .map<DropdownMenuItem<String>>((String value) {
+                                    .map<DropdownMenuItem<String>>((
+                                      String value,
+                                    ) {
                   return DropdownMenuItem<String>(
                     value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                                        child: Text(
+                                          value,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      );
+                                    })
+                                    .toList(),
                 onChanged: (String? newValue) {
                   setState(() {
                     _selectedRole = newValue!;
                   });
                 },
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Register Button
+                            Container(
+                              height: 56,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF007C91),
+                                    Color(0xFF005A6B),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF007C91,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
                 onPressed: _isRegistering ? null : _register,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF007C91),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: Semantics(
-                  label: _isRegistering
-                      ? "Registering, please wait"
-                      : "Register SACCO",
                   child: _isRegistering
-                      ? const CircularProgressIndicator(
+                                    ? const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        )
-                      : const Text(
-                          "Register SACCO",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        "Create Account",
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Info Card
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.green[200]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.info_outline,
+                                    color: Colors.green[600],
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      "After registration, you'll need to verify your email and wait for admin approval.",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.green[800],
+                                        fontSize: 12,
                         ),
                 ),
               ),
             ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Login Link
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Already have an account? ",
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[600],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pushNamed(context, '/login');
+                                  },
+                                  child: Text(
+                                    "Sign In",
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF007C91),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      {TextInputType keyboardType = TextInputType.text, String? helperText}) {
-    return TextFormField(
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType keyboardType = TextInputType.text,
+    String? helperText,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+        style: GoogleFonts.poppins(fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
+          labelStyle: GoogleFonts.poppins(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ),
         helperText: helperText,
-        border: const OutlineInputBorder(),
+          helperStyle: GoogleFonts.poppins(
+            color: Colors.grey[500],
+            fontSize: 12,
+          ),
+          prefixIcon: Icon(icon, color: const Color(0xFF007C91)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter $label';
         }
-        if (label == 'Email') {
+          if (label == 'Email Address') {
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
             return 'Please enter a valid email address';
           }
         }
-        if (label == 'Telephone Number') {
+          if (label == 'Phone Number') {
           if (!RegExp(r'^\d{10}$').hasMatch(value)) {
             return 'Please enter a valid 10-digit phone number';
           }
         }
         return null;
       },
+      ),
     );
   }
 }
