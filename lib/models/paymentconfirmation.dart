@@ -11,9 +11,9 @@ class PaymentConfirmationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSuccess = paymentDetails['status'] == 'success';
-    final amount = paymentDetails['amount'] ?? 0.0;
-    final transactionId = paymentDetails['transactionId'] ?? 'N/A';
+    final isSuccess = paymentDetails['status'] == 'SUCCESSFUL';
+    final amount = double.parse(paymentDetails['data']['amount'] ?? 0.0);
+    final transactionId = paymentDetails['financialTransactionId'] ?? 'N/A';
     final phone = paymentDetails['phone'] ?? 'N/A';
     final method = paymentDetails['method'] ?? 'Mobile Money';
 

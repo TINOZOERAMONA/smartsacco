@@ -586,6 +586,12 @@ class _MemberDashboardState extends State<MemberDashboard> {
                           'MOMO-${DateTime.now().millisecondsSinceEpoch}',
                     });
 
+                // final remainingBalance = (await FirebaseFirestore.instance
+                //     .collection('users')
+                //     .doc(memberId)
+                //     .collection('loans')
+                //     .doc(loan.id).get()).data()?['remainingBalance'];
+
                 await FirebaseFirestore.instance
                     .collection('users')
                     .doc(memberId)
@@ -596,6 +602,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                       'nextPaymentDate': DateTime.now().add(
                         const Duration(days: 30),
                       ),
+                      ...((loan.remainingBalance - paymentAmount) <= 0 ? {'status': 'Completed'} : {}),
                     });
 
                 await FirebaseFirestore.instance
@@ -1917,13 +1924,13 @@ class _MemberDashboardState extends State<MemberDashboard> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Monthly Payment',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  // Text(
+                  //   'Monthly Payment',
+                  //   style: GoogleFonts.poppins(
+                  //     fontSize: 12,
+                  //     color: Colors.grey[600],
+                  //   ),
+                  // ),
                   Text(
                     _formatCurrency(loan.nextPaymentAmount),
                     style: GoogleFonts.poppins(
@@ -2938,77 +2945,77 @@ class _MemberDashboardState extends State<MemberDashboard> {
             child: Column(
               children: [
                 // Loan Amounts
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDetailItem(
-                        'Original Amount',
-                        _formatCurrency(loan.amount),
-                        Icons.account_balance_wallet,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildDetailItem(
-                        'Remaining Balance',
-                        _formatCurrency(loan.remainingBalance),
-                        Icons.balance,
-                        Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: _buildDetailItem(
+                //         'Original Amount',
+                //         _formatCurrency(loan.amount),
+                //         Icons.account_balance_wallet,
+                //         Colors.blue,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 12),
+                //     Expanded(
+                //       child: _buildDetailItem(
+                //         'Remaining Balance',
+                //         _formatCurrency(loan.remainingBalance),
+                //         Icons.balance,
+                //         Colors.orange,
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 12),
 
-                // Payment Details
-                if (showPaymentButton) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildDetailItem(
-                          'Monthly Payment',
-                          _formatCurrency(loan.monthlyPayment),
-                          Icons.payment,
-                          Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildDetailItem(
-                          'Interest Rate',
-                          '${loan.interestRate}% p.a.',
-                          Icons.trending_up,
-                          Colors.purple,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
+                // // Payment Details
+                // if (showPaymentButton) ...[
+                //   Row(
+                //     children: [
+                //       Expanded(
+                //         child: _buildDetailItem(
+                //           'Monthly Payment',
+                //           _formatCurrency(loan.monthlyPayment),
+                //           Icons.payment,
+                //           Colors.green,
+                //         ),
+                //       ),
+                //       const SizedBox(width: 12),
+                //       Expanded(
+                //         child: _buildDetailItem(
+                //           'Interest Rate',
+                //           '${loan.interestRate}% p.a.',
+                //           Icons.trending_up,
+                //           Colors.purple,
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                //   const SizedBox(height: 12),
+                // ],
 
                 // Dates
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildDetailItem(
-                        'Application Date',
-                        DateFormat('MMM d, y').format(loan.disbursementDate),
-                        Icons.calendar_today,
-                        Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildDetailItem(
-                        'Due Date',
-                        DateFormat('MMM d, y').format(loan.dueDate),
-                        Icons.event,
-                        Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: _buildDetailItem(
+                //         'Application Date',
+                //         DateFormat('MMM d, y').format(loan.disbursementDate),
+                //         Icons.calendar_today,
+                //         Colors.grey,
+                //       ),
+                //     ),
+                //     const SizedBox(width: 12),
+                //     Expanded(
+                //       child: _buildDetailItem(
+                //         'Due Date',
+                //         DateFormat('MMM d, y').format(loan.dueDate),
+                //         Icons.event,
+                //         Colors.red,
+                //       ),
+                //     ),
+                //   ],
+                // ),
 
                 // Payment Status (for active loans)
                 if (showPaymentButton) ...[
@@ -7104,30 +7111,30 @@ class LoansListScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 10),
-                            _buildLoanDetailRow(
-                              'Original Amount:',
-                              NumberFormat.currency(
-                                symbol: 'UGX ',
-                              ).format(loan.amount),
-                            ),
-                            _buildLoanDetailRow(
-                              'Remaining Balance:',
-                              NumberFormat.currency(
-                                symbol: 'UGX ',
-                              ).format(loan.remainingBalance),
-                            ),
+                            // const SizedBox(height: 10),
+                            // _buildLoanDetailRow(
+                            //   'Original Amount:',
+                            //   NumberFormat.currency(
+                            //     symbol: 'UGX ',
+                            //   ).format(loan.amount),
+                            // ),
+                            // _buildLoanDetailRow(
+                            //   'Remaining Balance:',
+                            //   NumberFormat.currency(
+                            //     symbol: 'UGX ',
+                            //   ).format(loan.remainingBalance),
+                            // ),
                             _buildLoanDetailRow(
                               'Next Payment:',
                               NumberFormat.currency(
                                 symbol: 'UGX ',
                               ).format(nextPaymentAmount),
                             ),
-                            _buildLoanDetailRow(
-                              'Due Date:',
-                              '${DateFormat('MMM d, y').format(nextPaymentDate)} '
-                                  '(${isOverdue ? 'Overdue ${-daysRemaining} days' : 'Due in $daysRemaining days'})',
-                            ),
+                            // _buildLoanDetailRow(
+                            //   'Due Date:',
+                            //   '${DateFormat('MMM d, y').format(nextPaymentDate)} '
+                            //       '(${isOverdue ? 'Overdue ${-daysRemaining} days' : 'Due in $daysRemaining days'})',
+                            // ),
                             const SizedBox(height: 16),
                             SizedBox(
                               width: double.infinity,

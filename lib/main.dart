@@ -22,7 +22,8 @@ import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:smartsacco/pages/payment_status_screen.dart';
-import 'package:smartsacco/pages/settings_page.dart';
+import 'package:smartsacco/models/paymentconfirmation.dart';
+//import 'package:smartsacco/pages/settings_page.dart';
 import 'package:smartsacco/services/user_preferences_service.dart';
 
 void main() async {
@@ -145,7 +146,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/admin-dashboard': (context) => const AdminMainPage(),
         '/members': (context) => const MembersPage(),
         '/blindmember': (context) => const VoiceMemberDashboard(),
-        '/settings': (context) => const SettingsPage(),
+        // '/settings': (context) => const SettingsPage(),
         '/email_verification': (context) => EmailVerificationScreen(
           userEmail:
               (ModalRoute.of(context)?.settings.arguments
@@ -181,6 +182,14 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
               );
             }
             return _errorRoute("Missing userId for member details");
+          case '/payment-confirmation':
+            final paymentDetails = args;
+            if (paymentDetails != null) {
+              return MaterialPageRoute(
+                builder: (context) => PaymentConfirmationPage(paymentDetails: paymentDetails),
+              );
+            }
+            return _errorRoute("Missing payment details for confirmation");
           case '/payment-status':
             final transactionId = args?['transactionId'] as String?;
             final amount = args?['amount'] as double?;

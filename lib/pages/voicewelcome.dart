@@ -23,11 +23,11 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
   String spokenText = "";
   int retryCount = 0;
   final int maxRetries = 3;
-
+  
   // Confirmation state
   bool awaitingConfirmation = false;
   String pendingAction = "";
-
+  
   late AnimationController _fadeController;
   late AnimationController _scaleController;
   late AnimationController _pulseController;
@@ -44,6 +44,8 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     _startWelcomeSequence();
   }
 
+
+
   void _initAnimations() {
     _fadeController = AnimationController(
       duration: const Duration(seconds: 2),
@@ -58,10 +60,9 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+    );
 
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
@@ -77,7 +78,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
-
+    
     flutterTts.setCompletionHandler(() {
       if (mounted) {
         setState(() {
@@ -119,7 +120,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
 
   Future<void> _startListening() async {
     _logger.info("Initializing speech recognition...");
-
+    
     // Stop any existing listening session
     if (isListening) {
       await speech.stop();
@@ -132,7 +133,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
           setState(() {
             isListening = val == 'listening';
           });
-
+          
           if (val == 'done' || val == 'notListening') {
             _handleListeningComplete();
           }
@@ -156,7 +157,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
           isListening = true;
           spokenText = "";
         });
-
+        
         _pulseController.repeat(reverse: true);
       }
 
@@ -183,83 +184,68 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
 
   void _handleListeningComplete() {
     _pulseController.stop();
-
+    
     if (!awaitingConfirmation) {
       // If we're not awaiting confirmation and haven't heard a valid command
-      if (!spokenText.contains('one') &&
-          !spokenText.contains('1') &&
-          !spokenText.contains('three') &&
+      if (!spokenText.contains('one') && 
+          !spokenText.contains('1') && 
+          !spokenText.contains('three') && 
           !spokenText.contains('3') &&
           !spokenText.contains('yes') &&
           !spokenText.contains('no') &&
           retryCount < maxRetries) {
+        
         retryCount++;
-        String retryMessage = retryCount == 1
+        String retryMessage = retryCount == 1 
             ? "I didn't catch that. Please say 'one' to register or 'three' to login."
-            : retryCount == 3
-            ? "Let's try again. Say 'one' for register or 'three' for login."
-            : "One more time. Say 'one' to register or 'three' to login.";
-
+            : retryCount == 3 
+                ? "Let's try again. Say 'one' for register or 'three' for login."
+                : "One more time. Say 'one' to register or 'three' to login.";
+        
         _speakAndRetry(retryMessage);
       } else if (retryCount >= maxRetries) {
-        _speakAndRetry(
-          "Having trouble with voice recognition. You can tap the screen to continue.",
-        );
+        _speakAndRetry("Having trouble with voice recognition. You can tap the screen to continue.");
       }
     } else {
       // If we're awaiting confirmation but didn't hear yes/no
-      if (!spokenText.contains('yes') &&
+      if (!spokenText.contains('yes') && 
           !spokenText.contains('no') &&
           retryCount < maxRetries) {
+        
         retryCount++;
         _speakAndRetry("Please say 'yes' to confirm or 'no' to cancel.");
       } else if (retryCount >= maxRetries) {
         _resetConfirmationState();
-        _speakAndRetry(
-          "Let's start over. Say 'one' to register or 'two' to login.",
-        );
+        _speakAndRetry("Let's start over. Say 'one' to register or 'two' to login.");
       }
     }
   }
 
   void _handleSpeechError(String errorMsg) {
     _pulseController.stop();
-
+    
     print('Speech error details: $errorMsg');
-
+    
     if (errorMsg.contains('network') || errorMsg.contains('connection')) {
-      _speakAndRetry(
-        "Network issue detected. Please check your connection and try again.",
-      );
-    } else if (errorMsg.contains('no-speech') ||
-        errorMsg.contains('speech-timeout')) {
+      _speakAndRetry("Network issue detected. Please check your connection and try again.");
+    } else if (errorMsg.contains('no-speech') || errorMsg.contains('speech-timeout')) {
       if (awaitingConfirmation) {
-        _speakAndRetry(
-          "I didn't hear anything. Please say 'yes' to confirm or 'no' to cancel.",
-        );
+        _speakAndRetry("I didn't hear anything. Please say 'yes' to confirm or 'no' to cancel.");
       } else {
-        _speakAndRetry(
-          "I didn't hear anything. Please say 'one' to register or 'two' to login.",
-        );
+        _speakAndRetry("I didn't hear anything. Please say 'one' to register or 'two' to login.");
       }
     } else if (retryCount < maxRetries) {
       retryCount++;
       if (awaitingConfirmation) {
-        _speakAndRetry(
-          "Let's try again. Please say 'yes' to confirm or 'no' to cancel.",
-        );
+        _speakAndRetry("Let's try again. Please say 'yes' to confirm or 'no' to cancel.");
       } else {
-        _speakAndRetry(
-          "Let's try again. Say 'one' to register or 'two' to login.",
-        );
+        _speakAndRetry("Let's try again. Say 'one' to register or 'two' to login.");
       }
     } else {
       if (awaitingConfirmation) {
         _resetConfirmationState();
       }
-      _speakAndRetry(
-        "Voice recognition is having trouble. Please tap the screen to continue.",
-      );
+      _speakAndRetry("Voice recognition is having trouble. Please tap the screen to continue.");
     }
   }
 
@@ -267,13 +253,13 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     setState(() {
       isSpeaking = true;
     });
-
+    
     await flutterTts.speak(message);
   }
 
   void _handleVoiceNavigation() {
     print("Handling voice navigation with text: $spokenText");
-
+    
     if (awaitingConfirmation) {
       _handleConfirmation();
     } else {
@@ -290,9 +276,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       _requestConfirmation("login", "three");
     } else {
       print("Unrecognized command: $spokenText");
-      _speakAndRetry(
-        "I didn't catch that Please say 'one' to register or 'three' to login.",
-      );
+      _speakAndRetry("I didn't catch that Please say 'one' to register or 'three' to login.");
     }
   }
 
@@ -311,8 +295,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     _pulseController.stop();
     await speech.stop();
 
-    String confirmationMessage =
-        "Did you say $number to $action? Say yes to confirm or no to cancel.";
+   String confirmationMessage = "Did you say $number to $action? Say yes to confirm or no to cancel.";
 
     setState(() {
       isSpeaking = true;
@@ -329,11 +312,11 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
       _executeAction();
     } else if (spokenText.contains('no')) {
       print("Cancelled - returning to main menu");
-
+      
       // Stop current speech recognition
       speech.stop();
       _pulseController.stop();
-
+      
       // Reset confirmation state and clear spoken text
       _resetConfirmationState();
       setState(() {
@@ -341,7 +324,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
         isListening = false;
         isSpeaking = true;
       });
-
+      
       // Navigate back to home screen first, then repeat options
       _speakWelcomeAfterCancel();
     } else {
@@ -351,22 +334,20 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
   }
 
   Future<void> _speakWelcomeAfterCancel() async {
-    await flutterTts.speak(
-      "Navigating you back to home screen. Welcome Back again. To register say one and to login say three",
-    );
+    await flutterTts.speak("Navigating you back to home screen. Welcome Back again. To register say one and to login say three");
   }
 
   void _executeAction() {
     print("Executing action: $pendingAction");
-
+    
     setState(() {
       isListening = false;
       isSpeaking = true;
     });
-
+    
     _pulseController.stop();
     speech.stop();
-
+    
     if (pendingAction == "register") {
       print("Navigating to register screen");
       flutterTts.speak("Navigating you to the register screen!");
@@ -401,7 +382,7 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     print("Navigating to main app - tap detected");
     speech.stop();
     flutterTts.stop();
-
+    
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         // When tapping, go to regular home screen instead of voice screens
@@ -414,7 +395,10 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
     flutterTts.speak(message);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -533,13 +517,13 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
                             width: 80,
                             height: 80,
                             decoration: BoxDecoration(
-                              color: awaitingConfirmation
-                                  ? Colors.orange.shade100
+                              color: awaitingConfirmation 
+                                  ? Colors.orange.shade100 
                                   : Colors.red.shade100,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: awaitingConfirmation
-                                    ? Colors.orange.shade400
+                                color: awaitingConfirmation 
+                                    ? Colors.orange.shade400 
                                     : Colors.red.shade400,
                                 width: 2,
                               ),
@@ -547,8 +531,8 @@ class _VoiceWelcomeScreenState extends State<VoiceWelcomeScreen>
                             child: Icon(
                               Icons.mic,
                               size: 40,
-                              color: awaitingConfirmation
-                                  ? Colors.orange.shade600
+                              color: awaitingConfirmation 
+                                  ? Colors.orange.shade600 
                                   : Colors.red.shade600,
                             ),
                           ),

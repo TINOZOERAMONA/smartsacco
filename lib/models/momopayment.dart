@@ -76,10 +76,11 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
         payerMessage:
             'SACCO Contribution: UGX ${widget.amount.toStringAsFixed(2)}',
       );
+      // String d = 2.toString();
       // Start polling for payment confirmation
       _startPolling(
         payementData['referenceId'],
-        payementData['authorization'],
+        // payementData['authorization'],
         payementData['externalId'],
         momoService,
       );
@@ -117,7 +118,7 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
 
   void _startPolling(
     String referenceId,
-    String authorization,
+    // String authorization,
     String externalId,
     MomoService momoService,
   ) {
@@ -135,7 +136,7 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
       // } else {
       //   data = jsonDecode(await file.readAsString());
       // }
-      final data = await momoService.checkTransactionStatus(externalId);
+      final data = await momoService.checkTransactionStatus(externalId, referenceId);
 
       if (data['externalId'] == externalId) {
         timer.cancel();
@@ -147,11 +148,12 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
           Navigator.pushNamed(
             context,
             '/payment-confirmation',
-            arguments: {
-              'success': data['status'] == 'SUCCESSFUL',
-              'amount': widget.amount,
-              'transactionId': referenceId,
-            },
+            // arguments: {
+            //   'success': data['status'] == 'SUCCESSFUL',
+            //   'amount': widget.amount,
+            //   'transactionId': referenceId,
+            // },
+            arguments: data,
           );
         }
       }

@@ -73,7 +73,7 @@ class PaymentService {
         });
 
         // Start monitoring transaction status
-        _monitorTransactionStatus(userId, externalId, transactionRef);
+        _monitorTransactionStatus(userId, externalId, paymentResult['referenceId'], transactionRef);
 
         return {
           'success': true,
@@ -167,7 +167,7 @@ class PaymentService {
         });
 
         // Start monitoring transaction status
-        _monitorTransactionStatus(userId, externalId, transactionRef);
+        _monitorTransactionStatus(userId, externalId, transferResult['referenceId'], transactionRef);
 
         return {
           'success': true,
@@ -206,12 +206,14 @@ class PaymentService {
   Future<void> _monitorTransactionStatus(
     String userId,
     String externalId,
+    String referenceId,
     DocumentReference transactionRef,
   ) async {
     try {
       // Check status with retry
       final statusResult = await _momoService.checkTransactionStatus(
         externalId,
+        referenceId,
         maxRetries: 12, // 1 minute total
         delay: const Duration(seconds: 5),
       );

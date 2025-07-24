@@ -139,10 +139,10 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           message = "Now please say your phone number digit by digit. For example, say 'zero seven six zero three four five six seven eight' for 0760345678.";
           break;
         case "pin":
-          message = "Now please say your 4-digit PIN. This will be used for quick access.";
+          message = "Now please say your 6-digit PIN. This will be used for quick access.";
           break;
         case "confirm_pin":
-          message = "Please say your 4-digit PIN again to confirm it.";
+          message = "Please say your 6-digit PIN again to confirm it.";
           break;
         case "role":
           message = "Finally, please say your role. Say 'member' if you are a member, or say 'admin' if you are an administrator.";
@@ -354,27 +354,27 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
 
   void _processPin(String input) {
     String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length == 4) {
+    if (digits.length == 6) {
       tempValue = digits;
       setState(() {
         isConfirming = true;
       });
       _speakCurrentStep();
     } else {
-      _askAgain("Please say exactly 4 digits for your PIN.");
+      _askAgain("Please say exactly 6 digits for your PIN.");
     }
   }
 
   void _processConfirmPin(String input) {
     String digits = input.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.length == 4) {
+    if (digits.length == 6) {
       tempValue = digits;
       setState(() {
         isConfirming = true;
       });
       _speakCurrentStep();
     } else {
-      _askAgain("Please say exactly 4 digits to confirm your PIN.");
+      _askAgain("Please say exactly 6 digits to confirm your PIN.");
     }
   }
 
@@ -633,7 +633,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       case "phone":
         return "Say your phone number";
       case "pin":
-        return "Say your 4-digit PIN";
+        return "Say your 6-digit PIN";
       case "confirm_pin":
         return "Confirm your PIN";
       case "role":

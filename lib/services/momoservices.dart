@@ -52,7 +52,7 @@ class MomoService {
 
       if (response.statusCode == 202) {
         // Payment request accepted, check status
-        final status = await _checkRequestToPayStatus(externalId);
+        final status = await _checkRequestToPayStatus(externalId, referenceId);
         return {
           'success': true,
           'status': 'PENDING',
@@ -121,7 +121,7 @@ class MomoService {
         final status = await _checkTransferStatus(externalId);
         return {
           'success': true,
-          'status': 'PENDING',
+          'status': 'SUCCESSFUL',
           'referenceId': referenceId,
           'externalId': externalId,
           'message': 'Transfer initiated successfully',
@@ -149,12 +149,19 @@ class MomoService {
   // Check Request to Pay Status (Collection)
   Future<Map<String, dynamic>> _checkRequestToPayStatus(
     String externalId,
+    String referenceId,
   ) async {
     try {
       final url = Uri.parse(
-        '${MTNApiConfig.collectionUrl}/v1_0/requesttopay/$externalId',
+        '${MTNApiConfig.collectionUrl}/v1_0/requesttopay/$referenceId',
       );
-      final headers = await _getCollectionBasicHeaders();
+      // final headers = await _getCollectionBasicHeaders();
+      final collectionHeaders = await _getCollectionHeaders(externalId);
+      final headers = {
+        'Authorization': collectionHeaders['Authorization'] as String,
+        'X-Target-Environment': collectionHeaders['X-Target-Environment'] as String,
+        'Ocp-Apim-Subscription-Key': collectionHeaders['Ocp-Apim-Subscription-Key'] as String,
+      };
 
       final response = await http.get(url, headers: headers);
 
@@ -164,6 +171,7 @@ class MomoService {
           'success': true,
           'status': data['status'],
           'financialTransactionId': data['financialTransactionId'],
+          'externalId': data['externalId'],
           'reason': data['reason'],
           'data': data,
         };
@@ -277,13 +285,16 @@ class MomoService {
   // Get headers for Collection API requests
   Future<Map<String, String>> _getCollectionHeaders(
     String externalId,
-    String referenceId,
+    [String? referenceId]
   ) async {
     // First get access token for collection
     final token = await _getCollectionAccessToken();
 
     return {
-      'X-Reference-Id': referenceId,
+      ...(referenceId == null
+        ? {}
+        : { 'X-Reference-Id': referenceId }
+      ),
       'X-Target-Environment': MTNApiConfig.targetEnvironment,
       'Ocp-Apim-Subscription-Key': MTNApiConfig.collectionSubscriptionKey,
       'Authorization': 'Bearer $token',
@@ -446,13 +457,13 @@ class MomoService {
 
   // Check transaction status with retry
   Future<Map<String, dynamic>> checkTransactionStatus(
-    String externalId, {
-    int maxRetries = 10,
-    Duration delay = const Duration(seconds: 5),
+    String externalId, String referenceId, {
+      int maxRetries = 10,
+      Duration delay = const Duration(seconds: 5),
   }) async {
     for (int i = 0; i < maxRetries; i++) {
       try {
-        final status = await _checkRequestToPayStatus(externalId);
+        final status = await _checkRequestToPayStatus(externalId, referenceId);
 
         if (status['success']) {
           final transactionStatus = status['status'];
