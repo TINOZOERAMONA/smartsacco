@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:smartsacco/pages/loan.dart';
+import 'package:smartsacco/pages/loanapplication.dart';
 import 'package:smartsacco/models/momopayment.dart';
 import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/feedback.dart';
@@ -101,7 +102,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       print('Speech recognition initialized: $_speechEnabled');
     } catch (e) {
       print('Error initializing speech recognition: $e');
-    
+
       _speechEnabled = false;
     }
     setState(() {});
@@ -163,8 +164,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _speakAndWaitForResponse(
       "Welcome to Members Dashboard. I will read you the menu options. "
       "After I finish, I will listen for your choice. "
-      "Option 1: Withdraw money. "
-      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
@@ -179,8 +178,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     if (!_isSpeaking) {
       _speakAndWaitForResponse(
         "Sorry, I couldn't understand you clearly. Let me repeat the options. "
-        "Option 1: Withdraw money. "
-        "Option 2: Apply for a loan. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
@@ -249,8 +246,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
             if (_lastWords.trim().isEmpty) {
               _speakAndWaitForResponse(
                 "Sorry, I didn’t hear anything. Please try again. "
-                "Option 1: Withdraw money. "
-                "Option 2: Apply for a loan. "
                 "Option 3: Check savings. "
                 "Option 4: Check loans. "
                 "Option 5: Check amount due. "
@@ -314,51 +309,24 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       return;
     }
 
-    // Main menu options - Fixed to handle spoken numbers correctly
-    if (command.contains('1') || 
-        command.contains('one') || 
-        command.contains('withdraw')) {
-      _confirmChoice("1", "withdraw money");
-    } else if (command.contains('2') || 
-              command.contains('two') || 
-              command.contains('apply loan') ||
-              command.contains('loan')) {
-      _confirmChoice("2", "apply for a loan");
-    } else if (command.contains('3') || 
-              command.contains('three') ||
-              command.contains('savings') ||
-              command.contains('balance')) {
+    // Main menu options
+    if (command.contains('3') || command.contains('three')) {
       _confirmChoice("3", "check your total savings");
-    } else if (command.contains('4') ||  // Fixed from '2' to '4'
-              command.contains('four') ||
-              command.contains('loans') ||
-              command.contains('active loans')) {
+    } else if (command.contains('2') || command.contains('four')) {
       _confirmChoice("4", "check your active loans");
-    } else if (command.contains('5') || 
-              command.contains('five') ||
-              command.contains('due') ||
-              command.contains('amount due')) {
+    } else if (command.contains('5') || command.contains('five')) {
       _confirmChoice("5", "check your amount due");
-    } else if (command.contains('6') || 
-              command.contains('six') ||
-              command.contains('deposit') ||
-              command.contains('make deposit')) {
+    } else if (command.contains('6') || command.contains('six')) {
       _confirmChoice("6", "make a deposit");
-    } else if (command.contains('7') || 
-              command.contains('seven') ||
-              command.contains('logout') ||
-              command.contains('log out')) {
+    } else if (command.contains('7') || command.contains('seven')) {
       _confirmChoice("7", "logout");
     } else if (command.contains('8') ||
-              command.contains('eight') ||
-              command.contains('repeat') ||
-              command.contains('options')) {
+        command.contains('eight') ||
+        command.contains('repeat')) {
       _repeatOptions();
     } else {
       _speakAndWaitForResponse(
-        "I didn't understand that. Please say a number from 1 to 8. "
-        "Option 1: Withdraw money. "
-        "Option 2: Apply for a loan. "
+        "I didn't understand that. Please say a number from 3 to 8. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
@@ -369,13 +337,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       );
     }
   }
+
   // PIN methods removed - deposits now processed directly without PIN verification
 
   void _repeatOptions() {
     _speakAndWaitForResponse(
       "Here are your options again. "
-      "Option 1: Withdraw money. "
-      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
@@ -425,18 +392,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   void _executeChoice(String option) {
     switch (option) {
-      case "1":
-        _speakAndWaitForResponse(
-          "To withdraw money, please visit your SACCO administrator. "
-          "Would you like to return to the main menu? Say yes for menu.",
-        );
-        break;
-      case "2":
-        _speakAndWaitForResponse(
-          "To apply for a loan, please visit your SACCO administrator. "
-          "Would you like to return to the main menu? Say yes for menu.",
-        );
-        break;
       case "3":
         _speakSavingsInfo();
         break;
@@ -454,7 +409,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         break;
     }
   }
-
 
   void _speakSavingsInfo() {
     _lastInformationType = 'savings';
@@ -583,16 +537,35 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         _logout();
         break;
       case VoiceAction.deposit:
-        // Directly process the deposit
-        _processDeposit(_pendingAmount, 'Voice Deposit');
-        _speakAndWaitForResponse(
-          "Deposit successful. Your new balance is ${_formatCurrencyForSpeech(_currentSavings + _pendingAmount)} Uganda Shillings. "
-          "Would you like to hear the main menu? Say yes for menu.",
-        );
-        _resetVoiceState();
+        // Process the deposit and wait for completion before speaking
+        _processDepositAndSpeakResult(_pendingAmount, 'Voice Deposit');
         break;
       default:
         _returnToMainMenu();
+    }
+  }
+
+  Future<void> _processDepositAndSpeakResult(
+    double amount,
+    String method,
+  ) async {
+    try {
+      // Process the deposit
+      await _processDeposit(amount, method);
+
+      // Now speak the result with the updated balance from database
+      _speakAndWaitForResponse(
+        "Deposit successful. Your new balance is ${_formatCurrencyForSpeech(_currentSavings)} Uganda Shillings. "
+        "Would you like to hear the main menu? Say yes for menu.",
+      );
+      _resetVoiceState();
+    } catch (e) {
+      print('❌ Error in deposit process: $e');
+      _speakAndWaitForResponse(
+        "Error processing deposit. Please try again or contact support. "
+        "Would you like to hear the main menu? Say yes for menu.",
+      );
+      _resetVoiceState();
     }
   }
 
@@ -619,8 +592,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _resetVoiceState();
     _speakAndWaitForResponse(
       "Returning to main menu. "
-      "Option 1:Withdraw money. "
-      "Option 2:Apply for a loan"
       "Option 3: Check savings. "
       "Option 4: Check loans. "
       "Option 5: Check amount due. "
@@ -759,7 +730,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
             ),
           );
         } else {
-          print('⚠️ Skipping invalid transaction: ${doc.id}');
+          print('⚠ Skipping invalid transaction: ${doc.id}');
         }
       }
 
@@ -850,7 +821,8 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
   //                 reference: p['reference'] ?? '',
   //               ),
   //             )
-  //             .toList(), monthlyPayment: 0,
+  //             .toList(),
+  //         monthlyPayment: 0,
   //       ),
   //     );
   //   }
@@ -899,7 +871,9 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     try {
       print('🔄 Processing deposit: $amount via $method');
       print('👤 User ID: $memberId');
-      print('💰 Current balance before deposit: ${_formatCurrency(_currentSavings)}');
+      print(
+        '💰 Current balance before deposit: ${_formatCurrency(_currentSavings)}',
+      );
 
       // Generate unique transaction ID
       final transactionId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -962,7 +936,9 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       await _fetchTransactionHistory();
 
       print('✅ Data refreshed successfully');
-      print('💰 Final balance from database: ${_formatCurrency(_currentSavings)}');
+      print(
+        '💰 Final balance from database: ${_formatCurrency(_currentSavings)}',
+      );
       print('📊 Total transactions: ${_transactions.length}');
       print('📊 Total savings records: ${_savingsHistory.length}');
 
@@ -975,11 +951,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
           .get();
 
       if (verificationDoc.exists) {
-        print('✅ Transaction verification successful: ${verificationDoc.data()}');
+        print(
+          '✅ Transaction verification successful: ${verificationDoc.data()}',
+        );
       } else {
         print('❌ Transaction verification failed: Document not found');
       }
-
     } catch (e) {
       print('❌ Error processing deposit: $e');
       _speakAndWaitForResponse(
