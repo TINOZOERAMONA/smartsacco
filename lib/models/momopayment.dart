@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:smartsacco/services/momoservices.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -68,13 +67,7 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
         await _clearCallbackFile();
       }
 
-      final momoService = MomoService(
-        subscriptionKey: subscriptionKey,
-        apiUser: apiUser,
-        apiKey: apiKey,
-        isSandbox: isSandbox,
-        callbackUrl: callbackUrl,
-      ); // Configured with your credentials
+      final momoService = MomoService(); // Configured with your credentials
 
       final payementData = await momoService.requestPayment(
         phoneNumber: _phoneController.text,
@@ -116,12 +109,6 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
   //   prefs.setString('momo_callback', jsonEncode(data));
   // }
 
-  Future<Map<String, dynamic>?> _loadMomoCallback() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('momo_callback');
-    if (jsonString == null) return null;
-    return jsonDecode(jsonString);
-  }
 
   Future<void> _clearMomoCallback() async {
     final prefs = await SharedPreferences.getInstance();
@@ -148,10 +135,7 @@ class _MomoPaymentPageState extends State<MomoPaymentPage> {
       // } else {
       //   data = jsonDecode(await file.readAsString());
       // }
-      final data = await momoService.transactionStatus(
-        referenceId: referenceId,
-        authorization: authorization,
-      );
+      final data = await momoService.checkTransactionStatus(externalId);
 
       if (data['externalId'] == externalId) {
         timer.cancel();

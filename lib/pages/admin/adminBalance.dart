@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class AdminBalancePage extends StatefulWidget {
-  const AdminBalancePage({Key? key}) : super(key: key);
+  const AdminBalancePage({super.key});
 
   @override
   State<AdminBalancePage> createState() => _AdminBalancePageState();

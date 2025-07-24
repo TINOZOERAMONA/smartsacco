@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:smartsacco/pages/admin/pending_loan_page.dart';
+import 'package:smartsacco/services/notification_service.dart';
+import 'package:smartsacco/models/notification.dart';
 
 import 'active_loan_page.dart';
 
@@ -24,9 +26,224 @@ class OverviewPageState extends State<OverviewPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Map<String, dynamic>> _transactions = [];
+  List<Map<String, dynamic>> _memberTransactions = [];
   bool _isLoadingTransactions = true;
+  bool _isLoadingMemberTransactions = false;
   String _searchQuery = '';
+  bool _showAllTransactions = false; // New flag to control transaction display
   final TextEditingController _searchController = TextEditingController();
+
+  // --- FIRESTORE INTEGRATION ENHANCEMENT START ---
+  // Enhanced transaction loading with member details
+  Future<void> _loadRecentTransactions() async {
+    setState(() {
+      _isLoadingTransactions = true;
+    });
+
+    try {
+      // Calculate date for past month
+      final now = DateTime.now();
+      final pastMonth = DateTime(now.year, now.month - 1, now.day);
+
+      // Fetch transactions with user details
+      Query query = _firestore
+          .collectionGroup('transactions')
+          .orderBy('date', descending: true);
+
+      // If not showing all transactions, filter by date
+      if (!_showAllTransactions) {
+        query = query.where(
+          'date',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(pastMonth),
+        );
+      }
+
+      final snapshot = await query.limit(_showAllTransactions ? 100 : 50).get();
+
+      List<Map<String, dynamic>> transactions = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final userId = doc.reference.parent.parent?.id;
+
+        // Fetch user details if available
+        String memberName = 'Unknown Member';
+        if (userId != null) {
+          try {
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(userId)
+                .get();
+            if (userDoc.exists) {
+              memberName = userDoc.data()?['fullName'] ?? 'Unknown Member';
+            }
+          } catch (e) {
+            debugPrint('Error fetching user details: $e');
+          }
+        }
+
+        transactions.add({
+          'id': doc.id,
+          'userId': userId,
+          'memberName': memberName,
+          'description': '${data['type']} via ${data['method']}',
+          'date': data['date'],
+          'amount': (data['amount'] ?? 0).toDouble(),
+          'type': (data['type'] ?? '').toString().toLowerCase(),
+          'status': data['status'] ?? '',
+          'method': data['method'] ?? '',
+          'fullName': memberName.toLowerCase(),
+        });
+      }
+
+      setState(() {
+        _transactions = transactions
+            .where((tx) => tx['status'] == 'Completed')
+            .toList();
+        _isLoadingTransactions = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching recent transactions: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading transactions: $e')),
+        );
+      }
+      setState(() {
+        _isLoadingTransactions = false;
+      });
+    }
+  }
+
+  // Load individual member transactions (first 3, then option for more)
+  Future<void> _loadMemberTransactions(
+    String memberId,
+    String memberName,
+  ) async {
+    setState(() {
+      _isLoadingMemberTransactions = true;
+    });
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(memberId)
+          .collection('transactions')
+          .orderBy('date', descending: true)
+          .limit(20) // Load more than 3 for "show more" functionality
+          .get();
+
+      final transactions = snapshot.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return {
+              'id': doc.id,
+              'description': '${data['type']} via ${data['method']}',
+              'date': data['date'],
+              'amount': (data['amount'] ?? 0).toDouble(),
+              'type': (data['type'] ?? '').toString().toLowerCase(),
+              'status': data['status'] ?? '',
+              'method': data['method'] ?? '',
+            };
+          })
+          .where((tx) => tx['status'] == 'Completed')
+          .toList();
+
+      setState(() {
+        _memberTransactions = transactions;
+        _isLoadingMemberTransactions = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching member transactions: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading member transactions: $e')),
+        );
+      }
+      setState(() {
+        _isLoadingMemberTransactions = false;
+      });
+    }
+  }
+
+  // Show member transaction details dialog
+  void _showMemberTransactions(String memberId, String memberName) {
+    _loadMemberTransactions(memberId, memberName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('$memberName\'s Transactions'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: _isLoadingMemberTransactions
+              ? const Center(child: CircularProgressIndicator())
+              : _memberTransactions.isEmpty
+              ? const Center(child: Text('No transactions found'))
+              : Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _memberTransactions.length,
+                        itemBuilder: (context, index) {
+                          final tx = _memberTransactions[index];
+                          final dateValue = tx['date'];
+                          DateTime date = dateValue is Timestamp
+                              ? dateValue.toDate()
+                              : DateTime.now();
+
+                          final amount = tx['amount'] as double;
+                          final type = tx['type'] as String;
+                          final isDeposit = type == 'deposit';
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: isDeposit
+                                  ? Colors.green
+                                  : Colors.red,
+                              child: Icon(
+                                isDeposit
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
+                                color: Colors.white,
+                              ),
+                            ),
+                            title: Text(tx['description']),
+                            subtitle: Text(
+                              DateFormat.yMMMd().add_jm().format(date),
+                            ),
+                            trailing: Text(
+                              '${isDeposit ? '+' : '-'} UGX${amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                color: isDeposit ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+  // --- FIRESTORE INTEGRATION ENHANCEMENT END ---
+
+  // Toggle between recent and all transactions
+  void _toggleTransactionView() {
+    setState(() {
+      _showAllTransactions = !_showAllTransactions;
+    });
+    _loadRecentTransactions(); // Reload with new filter
+  }
 
   @override
   void initState() {
@@ -38,43 +255,6 @@ class OverviewPageState extends State<OverviewPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadRecentTransactions() async {
-    setState(() {
-      _isLoadingTransactions = true;
-    });
-
-    try {
-      final snapshot = await _firestore
-          .collectionGroup('transactions')
-          .orderBy('date', descending: true)
-          .limit(50)
-          .get();
-
-      _transactions = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'description': '${data['type']} via ${data['method']}',
-          'date': data['date'],
-          'amount': (data['amount'] ?? 0).toDouble(),
-          'type': (data['type'] ?? '').toString().toLowerCase(),
-          'status': data['status'] ?? '',
-          'fullName': (data['fullName'] ?? '').toString().toLowerCase(),
-        };
-      }).where((tx) => tx['status'] == 'Completed').toList();
-    } catch (e) {
-      debugPrint('Error fetching recent transactions: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading transactions: $e')),
-        );
-      }
-    } finally {
-      setState(() {
-        _isLoadingTransactions = false;
-      });
-    }
   }
 
   List<Map<String, dynamic>> get _filteredTransactions {
@@ -129,8 +309,9 @@ class OverviewPageState extends State<OverviewPage> {
       await Share.shareXFiles([XFile(path)], text: 'Exported Transactions CSV');
     } catch (e) {
       if (kDebugMode) print('Error exporting CSV: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exporting CSV: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error exporting CSV: $e')));
     }
   }
 
@@ -149,6 +330,109 @@ class OverviewPageState extends State<OverviewPage> {
       case 'loan_approval':
         Navigator.pushNamed(context, '/loan_approval');
         break;
+    }
+  }
+
+  void _showNotificationDialog() {
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController messageController = TextEditingController();
+    NotificationType selectedType = NotificationType.general;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Send Notification to All Members'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                hintText: 'Enter notification title',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: messageController,
+              decoration: const InputDecoration(
+                labelText: 'Message',
+                hintText: 'Enter notification message',
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<NotificationType>(
+              value: selectedType,
+              decoration: const InputDecoration(labelText: 'Notification Type'),
+              items: NotificationType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type.name.toUpperCase()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  selectedType = value;
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (titleController.text.isNotEmpty &&
+                  messageController.text.isNotEmpty) {
+                Navigator.pop(context);
+                await _sendNotificationToAll(
+                  titleController.text,
+                  messageController.text,
+                  selectedType,
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill in all fields')),
+                );
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendNotificationToAll(
+    String title,
+    String message,
+    NotificationType type,
+  ) async {
+    try {
+      final notificationService = NotificationService();
+      await notificationService.sendNotificationToAllUsers(
+        title: title,
+        message: message,
+        type: type,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notification sent successfully to all members'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending notification: $e')),
+        );
+      }
     }
   }
 
@@ -176,6 +460,11 @@ class OverviewPageState extends State<OverviewPage> {
         title: const Text('Overview'),
         actions: [
           IconButton(
+            tooltip: 'Send Notification',
+            icon: const Icon(Icons.notifications),
+            onPressed: _showNotificationDialog,
+          ),
+          IconButton(
             tooltip: 'Export Transactions CSV',
             icon: const Icon(Icons.file_download_outlined),
             onPressed: _exportTransactionsCsv,
@@ -190,8 +479,9 @@ class OverviewPageState extends State<OverviewPage> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final chartHeight = constraints.maxWidth > 800 ? 280.0 : 220.0;
-              final transactionsHeight =
-                  constraints.maxWidth > 800 ? 320.0 : 260.0;
+              final transactionsHeight = constraints.maxWidth > 800
+                  ? 320.0
+                  : 260.0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,9 +510,12 @@ class OverviewPageState extends State<OverviewPage> {
                         valueFuture: _getActiveLoansCount(),
                         theme: theme,
                         isDark: isDark,
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(
-                                builder: (_) => const ActiveLoansPage())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ActiveLoansPage(),
+                          ),
+                        ),
                       ),
                       _buildSummaryCard(
                         title: 'Pending Loans',
@@ -231,9 +524,12 @@ class OverviewPageState extends State<OverviewPage> {
                         valueFuture: _getPendingLoansCount(),
                         theme: theme,
                         isDark: isDark,
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(
-                                builder: (_) => const PendingLoansPage())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PendingLoansPage(),
+                          ),
+                        ),
                       ),
                       _buildSummaryCard(
                         title: 'Total Savings',
@@ -275,8 +571,9 @@ class OverviewPageState extends State<OverviewPage> {
     return GestureDetector(
       onTap: onTap,
       child: MouseRegion(
-        cursor:
-            onTap != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: onTap != null
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         child: Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -407,36 +704,74 @@ class OverviewPageState extends State<OverviewPage> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          labelText: 'Search Transactions',
-          hintText: 'Search by description or type',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                )
-              : null,
-        ),
-        onChanged: (value) {
-          setState(() {
-            _searchQuery = value.toLowerCase();
-          });
-        },
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              labelText: 'Search Transactions',
+              hintText: 'Search by description or type',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.toLowerCase();
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _showAllTransactions
+                    ? 'Showing All Transactions'
+                    : 'Showing Recent Transactions (Past Month)',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _toggleTransactionView,
+                icon: Icon(
+                  _showAllTransactions ? Icons.schedule : Icons.all_inclusive,
+                ),
+                label: Text(_showAllTransactions ? 'Show Recent' : 'Show All'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _showAllTransactions
+                      ? Colors.orange
+                      : Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildRecentTransactions(
-      ThemeData theme, bool isDark, double height) {
+  Widget _buildRecentTransactions(ThemeData theme, bool isDark, double height) {
     final cardColor = isDark ? Colors.grey[800] : Colors.white;
 
     if (_isLoadingTransactions) {
@@ -479,11 +814,13 @@ class OverviewPageState extends State<OverviewPage> {
             } else {
               date = DateTime.now();
               debugPrint(
-                  'Warning: Transaction ${tx['description']} has a null or invalid date. Using current time as fallback.');
+                'Warning: Transaction ${tx['description']} has a null or invalid date. Using current time as fallback.',
+              );
             }
 
             final amount = tx['amount'] as double;
             final type = (tx['type'] ?? '').toLowerCase();
+            final memberName = tx['memberName'] ?? 'Unknown Member';
 
             Color transactionColor;
             IconData transactionIcon;
@@ -506,13 +843,22 @@ class OverviewPageState extends State<OverviewPage> {
             return ListTile(
               leading: CircleAvatar(
                 backgroundColor: transactionColor,
-                child: Icon(
-                  transactionIcon,
-                  color: Colors.white,
-                ),
+                child: Icon(transactionIcon, color: Colors.white),
               ),
               title: Text(tx['description'] ?? ''),
-              subtitle: Text(DateFormat.yMMMd().add_jm().format(date)),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(DateFormat.yMMMd().add_jm().format(date)),
+                  Text(
+                    memberName,
+                    style: TextStyle(
+                      color: theme.primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
               trailing: Text(
                 '$sign UGX${amount.toStringAsFixed(2)}',
                 style: TextStyle(
@@ -520,6 +866,12 @@ class OverviewPageState extends State<OverviewPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              onTap: () {
+                final userId = tx['userId'];
+                if (userId != null) {
+                  _showMemberTransactions(userId, memberName);
+                }
+              },
             );
           },
         ),
@@ -551,8 +903,11 @@ class OverviewPageState extends State<OverviewPage> {
 
       final currentBalance = totalDeposits - totalWithdrawals;
 
-      return NumberFormat.currency(locale: 'en_UG', symbol: 'UGX', decimalDigits: 2)
-          .format(currentBalance);
+      return NumberFormat.currency(
+        locale: 'en_UG',
+        symbol: 'UGX',
+        decimalDigits: 2,
+      ).format(currentBalance);
     } catch (e) {
       debugPrint('Error calculating current balance: $e');
       return 'Error';

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 class MemberLoanDetailsPage extends StatefulWidget {
   final String userId;
-  const MemberLoanDetailsPage({Key? key, required this.userId}) : super(key: key);
+  const MemberLoanDetailsPage({super.key, required this.userId});
 
   @override
   State<MemberLoanDetailsPage> createState() => _MemberLoanDetailsPageState();
@@ -13,8 +13,11 @@ class MemberLoanDetailsPage extends StatefulWidget {
 class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
   // Constants and Formatters
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
-  final NumberFormat _currencyFormat = NumberFormat.currency(locale: 'en_UG', symbol: 'UGX');
-  
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'en_UG',
+    symbol: 'UGX',
+  );
+
   // State variables
   late Stream<List<Map<String, dynamic>>> _loanStream;
   String _statusFilter = 'All';
@@ -60,8 +63,10 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
         total += type == 'withdrawal' ? -amount : amount;
       }
 
+      if (!mounted) return;
       setState(() => _totalSavings = total);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error fetching savings: $e'),
@@ -78,15 +83,17 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
         .collection('loans')
         .orderBy('applicationDate', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-              final data = doc.data();
-              return {
-                ...data,
-                'loanId': doc.id,
-                'applicationDateFormatted': data['applicationDate']?.toDate(),
-                'dueDateFormatted': data['dueDate']?.toDate(),
-              };
-            }).toList());
+        .map(
+          (snapshot) => snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              ...data,
+              'loanId': doc.id,
+              'applicationDateFormatted': data['applicationDate']?.toDate(),
+              'dueDateFormatted': data['dueDate']?.toDate(),
+            };
+          }).toList(),
+        );
   }
 
   // Loan status methods
@@ -98,10 +105,11 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
           .collection('loans')
           .doc(loanId)
           .update({
-        'status': status,
-        'decisionDate': FieldValue.serverTimestamp(),
-      });
+            'status': status,
+            'decisionDate': FieldValue.serverTimestamp(),
+          });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Loan $status successfully'),
@@ -110,6 +118,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating loan: $e'),
@@ -143,10 +152,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
           ),
           const SizedBox(width: 8),
@@ -215,9 +221,12 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(status).withOpacity(0.1),
+                      color: _getStatusColor(status).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getStatusColor(status),
@@ -235,19 +244,26 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                   ),
                 ],
               ),
-              
+
               const Divider(height: 24, thickness: 1),
-              
+
               // Loan details
-              _buildDetailRow('Amount', _currencyFormat.format(amount), highlight: true),
+              _buildDetailRow(
+                'Amount',
+                _currencyFormat.format(amount),
+                highlight: true,
+              ),
               _buildDetailRow('Purpose', purpose),
               if (appDate != null)
                 _buildDetailRow('Applied', _dateFormat.format(appDate)),
               if (dueDate != null)
                 _buildDetailRow('Due Date', _dateFormat.format(dueDate)),
               _buildDetailRow('Interest Rate', '$interestRate%'),
-              _buildDetailRow('Total Repayment', _currencyFormat.format(totalRepayment)),
-              
+              _buildDetailRow(
+                'Total Repayment',
+                _currencyFormat.format(totalRepayment),
+              ),
+
               // Progress bar
               const SizedBox(height: 16),
               Column(
@@ -267,7 +283,9 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       LinearProgressIndicator(
                         value: progress,
                         backgroundColor: Colors.grey[200],
-                        color: progress >= 1 ? Colors.green : Theme.of(context).primaryColor,
+                        color: progress >= 1
+                            ? Colors.green
+                            : Theme.of(context).primaryColor,
                         minHeight: 8,
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -306,9 +324,10 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                   ),
                 ],
               ),
-              
+
               // Action buttons for pending loans
-              if (status.toLowerCase() == 'pending approval' && loanId != null) ...[
+              if (status.toLowerCase() == 'pending approval' &&
+                  loanId != null) ...[
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -318,7 +337,10 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -331,7 +353,10 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -356,8 +381,9 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),),
-          
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -374,16 +400,13 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                 ),
               ),
             ),
-            
+
             // Title
             Row(
               children: [
                 const Text(
                   'Loan Details',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -392,31 +415,57 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Content
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildDetailRow('Loan ID', loan['loanId']?.toString() ?? 'N/A'),
-                    _buildDetailRow('Status', loan['status']?.toString() ?? 'N/A'),
-                    _buildDetailRow('Amount', _currencyFormat.format(loan['amount'] ?? 0), highlight: true),
-                    _buildDetailRow('Purpose', loan['purpose']?.toString() ?? 'N/A'),
+                    _buildDetailRow(
+                      'Loan ID',
+                      loan['loanId']?.toString() ?? 'N/A',
+                    ),
+                    _buildDetailRow(
+                      'Status',
+                      loan['status']?.toString() ?? 'N/A',
+                    ),
+                    _buildDetailRow(
+                      'Amount',
+                      _currencyFormat.format(loan['amount'] ?? 0),
+                      highlight: true,
+                    ),
+                    _buildDetailRow(
+                      'Purpose',
+                      loan['purpose']?.toString() ?? 'N/A',
+                    ),
                     if (loan['applicationDateFormatted'] != null)
-                      _buildDetailRow('Applied', _dateFormat.format(loan['applicationDateFormatted'])),
+                      _buildDetailRow(
+                        'Applied',
+                        _dateFormat.format(loan['applicationDateFormatted']),
+                      ),
                     if (loan['dueDateFormatted'] != null)
-                      _buildDetailRow('Due Date', _dateFormat.format(loan['dueDateFormatted'])),
-                    _buildDetailRow('Interest Rate', '${(loan['interestRate'] ?? 0).toStringAsFixed(2)}%'),
-                    _buildDetailRow('Repaid Amount', _currencyFormat.format(loan['repaidAmount'] ?? 0)),
-                    if (loan['notes'] != null && loan['notes'].toString().isNotEmpty)
+                      _buildDetailRow(
+                        'Due Date',
+                        _dateFormat.format(loan['dueDateFormatted']),
+                      ),
+                    _buildDetailRow(
+                      'Interest Rate',
+                      '${(loan['interestRate'] ?? 0).toStringAsFixed(2)}%',
+                    ),
+                    _buildDetailRow(
+                      'Repaid Amount',
+                      _currencyFormat.format(loan['repaidAmount'] ?? 0),
+                    ),
+                    if (loan['notes'] != null &&
+                        loan['notes'].toString().isNotEmpty)
                       _buildDetailRow('Notes', loan['notes'].toString()),
                   ],
                 ),
               ),
             ),
-            
+
             // Close button
             const SizedBox(height: 16),
             SizedBox(
@@ -445,15 +494,17 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
       onSelected: (selected) {
         setState(() => _statusFilter = selected ? value : 'All');
       },
-      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
       labelStyle: TextStyle(
-        color: _statusFilter == value ? Theme.of(context).primaryColor : Colors.grey[700],
+        color: _statusFilter == value
+            ? Theme.of(context).primaryColor
+            : Colors.grey[700],
         fontWeight: FontWeight.w500,
       ),
       shape: StadiumBorder(
         side: BorderSide(
-          color: _statusFilter == value 
-              ? Theme.of(context).primaryColor 
+          color: _statusFilter == value
+              ? Theme.of(context).primaryColor
               : Colors.grey[300]!,
         ),
       ),
@@ -518,7 +569,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       ),
                     ),
                   ),
-                
+
                 // Search bar
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -546,7 +597,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                     onChanged: (value) => setState(() {}),
                   ),
                 ),
-                
+
                 // Filter chips
                 SizedBox(
                   height: 50,
@@ -564,7 +615,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                     ],
                   ),
                 ),
-                
+
                 // Loan list
                 Expanded(
                   child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -575,7 +626,11 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.error, color: Colors.red, size: 48),
+                              const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 48,
+                              ),
                               const SizedBox(height: 16),
                               Text(
                                 'Error loading loans',
@@ -604,7 +659,8 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       if (_statusFilter != 'All') {
                         loans = loans.where((loan) {
                           final loanStatus = (loan['status'] ?? '').toString();
-                          return loanStatus.toLowerCase() == _statusFilter.toLowerCase();
+                          return loanStatus.toLowerCase() ==
+                              _statusFilter.toLowerCase();
                         }).toList();
                       }
 
@@ -612,9 +668,18 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       if (_searchController.text.isNotEmpty) {
                         final searchTerm = _searchController.text.toLowerCase();
                         loans = loans.where((loan) {
-                          return loan['purpose']?.toString().toLowerCase().contains(searchTerm) == true ||
-                              loan['loanId']?.toString().toLowerCase().contains(searchTerm) == true ||
-                              _currencyFormat.format(loan['amount'] ?? 0).contains(searchTerm);
+                          return loan['purpose']
+                                      ?.toString()
+                                      .toLowerCase()
+                                      .contains(searchTerm) ==
+                                  true ||
+                              loan['loanId']?.toString().toLowerCase().contains(
+                                    searchTerm,
+                                  ) ==
+                                  true ||
+                              _currencyFormat
+                                  .format(loan['amount'] ?? 0)
+                                  .contains(searchTerm);
                         }).toList();
                       }
 
@@ -630,7 +695,8 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                _statusFilter == 'All' && _searchController.text.isEmpty
+                                _statusFilter == 'All' &&
+                                        _searchController.text.isEmpty
                                     ? 'No loans found'
                                     : 'No matching loans',
                                 style: TextStyle(
@@ -638,7 +704,8 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                                   color: Colors.grey[600],
                                 ),
                               ),
-                              if (_statusFilter != 'All' || _searchController.text.isNotEmpty)
+                              if (_statusFilter != 'All' ||
+                                  _searchController.text.isNotEmpty)
                                 TextButton(
                                   onPressed: () {
                                     setState(() {
@@ -658,7 +725,8 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                         child: ListView.builder(
                           padding: const EdgeInsets.only(bottom: 16),
                           itemCount: loans.length,
-                          itemBuilder: (context, index) => _buildLoanCard(loans[index]),
+                          itemBuilder: (context, index) =>
+                              _buildLoanCard(loans[index]),
                         ),
                       );
                     },

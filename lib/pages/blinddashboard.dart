@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:smartsacco/pages/loan.dart';
+import 'package:smartsacco/pages/loanapplication.dart';
 import 'package:smartsacco/models/momopayment.dart';
 import 'package:smartsacco/pages/login.dart';
 import 'package:smartsacco/pages/feedback.dart';
@@ -163,8 +164,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _speakAndWaitForResponse(
       "Welcome to Members Dashboard. I will read you the menu options. "
       "After I finish, I will listen for your choice. "
-      "Option 1: Withdraw money. "
-      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
@@ -179,8 +178,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     if (!_isSpeaking) {
       _speakAndWaitForResponse(
         "Sorry, I couldn't understand you clearly. Let me repeat the options. "
-        "Option 1: Withdraw money. "
-        "Option 2: Apply for a loan. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
@@ -249,8 +246,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
             if (_lastWords.trim().isEmpty) {
               _speakAndWaitForResponse(
                 "Sorry, I didn’t hear anything. Please try again. "
-                "Option 1: Withdraw money. "
-                "Option 2: Apply for a loan. "
                 "Option 3: Check savings. "
                 "Option 4: Check loans. "
                 "Option 5: Check amount due. "
@@ -314,51 +309,24 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       return;
     }
 
-    // Main menu options - Fixed to handle spoken numbers correctly
-    if (command.contains('1') || 
-        command.contains('one') || 
-        command.contains('withdraw')) {
-      _confirmChoice("1", "withdraw money");
-    } else if (command.contains('2') || 
-              command.contains('two') || 
-              command.contains('apply loan') ||
-              command.contains('loan')) {
-      _confirmChoice("2", "apply for a loan");
-    } else if (command.contains('3') || 
-              command.contains('three') ||
-              command.contains('savings') ||
-              command.contains('balance')) {
+    // Main menu options
+    if (command.contains('3') || command.contains('three')) {
       _confirmChoice("3", "check your total savings");
-    } else if (command.contains('4') ||  // Fixed from '2' to '4'
-              command.contains('four') ||
-              command.contains('loans') ||
-              command.contains('active loans')) {
+    } else if (command.contains('2') || command.contains('four')) {
       _confirmChoice("4", "check your active loans");
-    } else if (command.contains('5') || 
-              command.contains('five') ||
-              command.contains('due') ||
-              command.contains('amount due')) {
+    } else if (command.contains('5') || command.contains('five')) {
       _confirmChoice("5", "check your amount due");
-    } else if (command.contains('6') || 
-              command.contains('six') ||
-              command.contains('deposit') ||
-              command.contains('make deposit')) {
+    } else if (command.contains('6') || command.contains('six')) {
       _confirmChoice("6", "make a deposit");
-    } else if (command.contains('7') || 
-              command.contains('seven') ||
-              command.contains('logout') ||
-              command.contains('log out')) {
+    } else if (command.contains('7') || command.contains('seven')) {
       _confirmChoice("7", "logout");
     } else if (command.contains('8') ||
-              command.contains('eight') ||
-              command.contains('repeat') ||
-              command.contains('options')) {
+        command.contains('eight') ||
+        command.contains('repeat')) {
       _repeatOptions();
     } else {
       _speakAndWaitForResponse(
-        "I didn't understand that. Please say a number from 1 to 8. "
-        "Option 1: Withdraw money. "
-        "Option 2: Apply for a loan. "
+        "I didn't understand that. Please say a number from 3 to 8. "
         "Option 3: Check savings. "
         "Option 4: Check loans. "
         "Option 5: Check amount due. "
@@ -369,13 +337,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       );
     }
   }
+
   // PIN methods removed - deposits now processed directly without PIN verification
 
   void _repeatOptions() {
     _speakAndWaitForResponse(
       "Here are your options again. "
-      "Option 1: Withdraw money. "
-      "Option 2: Apply for a loan. "
       "Option 3: Check your total savings. "
       "Option 4: Check active loans and their cost. "
       "Option 5: Check your amount due. "
@@ -425,18 +392,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
 
   void _executeChoice(String option) {
     switch (option) {
-      case "1":
-        _speakAndWaitForResponse(
-          "To withdraw money, please visit your SACCO administrator. "
-          "Would you like to return to the main menu? Say yes for menu.",
-        );
-        break;
-      case "2":
-        _speakAndWaitForResponse(
-          "To apply for a loan, please visit your SACCO administrator. "
-          "Would you like to return to the main menu? Say yes for menu.",
-        );
-        break;
       case "3":
         _speakSavingsInfo();
         break;
@@ -454,7 +409,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
         break;
     }
   }
-
 
   void _speakSavingsInfo() {
     _lastInformationType = 'savings';
@@ -619,8 +573,6 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     _resetVoiceState();
     _speakAndWaitForResponse(
       "Returning to main menu. "
-      "Option 1:Withdraw money. "
-      "Option 2:Apply for a loan"
       "Option 3: Check savings. "
       "Option 4: Check loans. "
       "Option 5: Check amount due. "
@@ -721,7 +673,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       });
 
       _fetchSavingsData();
-      //_fetchLoansData();
+      _fetchLoansData();
       _fetchNotifications();
       _fetchTransactionHistory();
     }
@@ -811,54 +763,54 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     });
   }
 
-  // Future<void> _fetchLoansData() async {
-  //   final loansSnapshot = await firestore.FirebaseFirestore.instance
-  //       .collection('users')
-  //       .doc(memberId)
-  //       .collection('loans')
-  //       .where('status', whereIn: ['Active', 'Overdue', 'Pending'])
-  //       .get();
+  Future<void> _fetchLoansData() async {
+    final loansSnapshot = await firestore.FirebaseFirestore.instance
+        .collection('users')
+        .doc(memberId)
+        .collection('loans')
+        .where('status', whereIn: ['Active', 'Overdue', 'Pending'])
+        .get();
 
-  //   List<Loan> loans = [];
+    List<Loan> loans = [];
 
-  //   for (var doc in loansSnapshot.docs) {
-  //     final payments = await firestore.FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(memberId)
-  //         .collection('loans')
-  //         .doc(doc.id)
-  //         .collection('payments')
-  //         .get();
+    for (var doc in loansSnapshot.docs) {
+      final payments = await firestore.FirebaseFirestore.instance
+          .collection('users')
+          .doc(memberId)
+          .collection('loans')
+          .doc(doc.id)
+          .collection('payments')
+          .get();
 
-  //     loans.add(
-  //       Loan(
-  //         id: doc.id,
-  //         amount: doc['amount']?.toDouble() ?? 0,
-  //         remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
-  //         disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
-  //         dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
-  //         status: doc['status'] ?? 'Pending',
-  //         type: doc['type'] ?? 'Personal',
-  //         interestRate: doc['interestRate']?.toDouble() ?? 12.0,
-  //         totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
-  //         repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
-  //         payments: payments.docs
-  //             .map(
-  //               (p) => Payment(
-  //                 amount: p['amount']?.toDouble() ?? 0,
-  //                 date: p['date']?.toDate() ?? DateTime.now(),
-  //                 reference: p['reference'] ?? '',
-  //               ),
-  //             )
-  //             .toList(), monthlyPayment: 0,
-  //       ),
-  //     );
-  //   }
+      loans.add(
+        Loan(
+          id: doc.id,
+          amount: doc['amount']?.toDouble() ?? 0,
+          remainingBalance: doc['remainingBalance']?.toDouble() ?? 0,
+          disbursementDate: doc['disbursementDate']?.toDate() ?? DateTime.now(),
+          dueDate: doc['dueDate']?.toDate() ?? DateTime.now(),
+          status: doc['status'] ?? 'Pending',
+          type: doc['type'] ?? 'Personal',
+          interestRate: doc['interestRate']?.toDouble() ?? 12.0,
+          totalRepayment: doc['totalRepayment']?.toDouble() ?? 0,
+          repaymentPeriod: doc['repaymentPeriod']?.toInt() ?? 12,
+          payments: payments.docs
+              .map(
+                (p) => Payment(
+                  amount: p['amount']?.toDouble() ?? 0,
+                  date: p['date']?.toDate() ?? DateTime.now(),
+                  reference: p['reference'] ?? '',
+                ),
+              )
+              .toList(), monthlyPayment: 0,
+        ),
+      );
+    }
 
-  //   setState(() {
-  //     _loans = loans;
-  //   });
-  // }
+    setState(() {
+      _loans = loans;
+    });
+  }
 
   Future<void> _fetchNotifications() async {
     final notificationsSnapshot = await firestore.FirebaseFirestore.instance

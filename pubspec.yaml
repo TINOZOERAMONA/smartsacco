@@ -52,10 +52,12 @@ dependencies:
   table_calendar: ^3.2.0
   universal_html: ^2.2.4
   url_launcher: ^6.3.1
-  csv: ^5.0.2
-  fl_chart: ^0.64.0
-  share_plus: ^7.2.1
+  csv: ^6.0.0
+  fl_chart: ^1.0.0
+  share_plus: ^11.0.0
   uuid: ^4.3.3
+  firebase_messaging: ^15.2.10
+  flutter_local_notifications: ^19.3.1
 
 dev_dependencies:
   flutter_test:
