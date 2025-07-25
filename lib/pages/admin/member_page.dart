@@ -144,7 +144,7 @@ class _MembersPageState extends State<MembersPage> {
                 ],
               ),
               const SizedBox(height: 12),
-              _buildDetailRow('Phone', member['phone']),
+              _buildDetailRow('', member['phone']),
               if (joinDate != null)
                 _buildDetailRow('Member since', DateFormat.yMMMd().format(joinDate)),
             ],
