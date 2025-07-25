@@ -75,7 +75,12 @@ class PendingLoansPage extends StatelessWidget {
                 future: getUserData(userId),
                 builder: (context, userSnapshot) {
                   if (userSnapshot.connectionState == ConnectionState.waiting) {
-                    return const ListTile(title: Text('Loading user...'));
+                    return const SizedBox(
+                      height: 72,
+                      child: ListTile(title: Text('Loading user...')),
+                      );
+
+                    //return const ListTile(title: Text('Loading user...'));
                   }
 
                   if (!userSnapshot.hasData || userSnapshot.data!.isEmpty) {
