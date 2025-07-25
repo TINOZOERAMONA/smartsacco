@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Import your pages
-import 'enhanced_dashboard_page.dart';
+//import 'enhanced_dashboard_page.dart';
 import 'loans_page.dart';
-import 'member_page.dart';
-import 'adminBalance.dart';
+//import 'member_page.dart';
+//import 'adminBalance.dart';
 import 'active_loan_page.dart';
 import 'pending_loan_page.dart';
 import 'overview.dart';
@@ -52,12 +52,13 @@ class AdminMainPageState extends State<AdminMainPage> {
     //   pageIndex: 4,
     //   description: 'System overview and reports',
     // ),
-    AdminMenuItem(
-      title: 'Members',
-      icon: Icons.people,
-      pageIndex: 5,
-      description: 'Member management',
-    ),
+    //),
+    // AdminMenuItem(
+    //   title: 'Members',
+    //   icon: Icons.people,
+    //   pageIndex: 5,
+    //   description: 'Member management',
+    // ),
     // AdminMenuItem(
     //   title: 'Admin Balance',
     //   icon: Icons.account_balance,
@@ -68,22 +69,22 @@ class AdminMainPageState extends State<AdminMainPage> {
 
   Widget _getPage(int index) {
     switch (index) {
-      // case 0:
-      //   return const EnhancedAdminDashboard();
       case 0:
         return const OverviewPage();
+        //return const EnhancedAdminDashboard();
       case 1:
+
         return const LoanPage();
       case 2:
         return const ActiveLoansPage();
       case 3:
         return const PendingLoansPage();
-      // case 4:
-      //   return const OverviewPage();
-      case 5:
-        return const MembersPage();
+      //case 4:
+        //return const OverviewPage();
+      //case 5:
+        //return const MembersPage();
       //case 6:
-      //  return const AdminBalancePage();
+        //return const AdminBalancePage();
       default:
         return const Center(
           child: Column(
