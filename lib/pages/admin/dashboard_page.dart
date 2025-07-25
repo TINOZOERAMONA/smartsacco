@@ -46,42 +46,44 @@ class AdminMainPageState extends State<AdminMainPage> {
       pageIndex: 3,
       description: 'Review pending applications',
     ),
-    AdminMenuItem(
-      title: 'Overview',
-      icon: Icons.analytics,
-      pageIndex: 4,
-      description: 'System overview and reports',
-    ),
+    // AdminMenuItem(
+    //   title: 'Overview',
+    //   icon: Icons.analytics,
+    //   pageIndex: 4,
+    //   description: 'System overview and reports',
+    // ),
     AdminMenuItem(
       title: 'Members',
       icon: Icons.people,
       pageIndex: 5,
       description: 'Member management',
     ),
-    AdminMenuItem(
-      title: 'Admin Balance',
-      icon: Icons.account_balance,
-      pageIndex: 6,
-      description: 'Financial overview',
-    ),
+    // AdminMenuItem(
+    //   title: 'Admin Balance',
+    //   icon: Icons.account_balance,
+    //   pageIndex: 6,
+    //   description: 'Financial overview',
+    // ),
   ];
 
   Widget _getPage(int index) {
     switch (index) {
+      // case 0:
+      //   return const EnhancedAdminDashboard();
       case 0:
-        return const EnhancedAdminDashboard();
+        return const OverviewPage();
       case 1:
         return const LoanPage();
       case 2:
         return const ActiveLoansPage();
       case 3:
         return const PendingLoansPage();
-      case 4:
-        return const OverviewPage();
+      // case 4:
+      //   return const OverviewPage();
       case 5:
         return const MembersPage();
-      case 6:
-        return const AdminBalancePage();
+      //case 6:
+      //  return const AdminBalancePage();
       default:
         return const Center(
           child: Column(
