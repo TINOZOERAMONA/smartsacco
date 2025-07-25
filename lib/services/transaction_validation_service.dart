@@ -223,8 +223,8 @@ class TransactionValidationService {
       final validationResults = {
         'totalTransactions': transactionsSnapshot.docs.length,
         'totalSavings': savingsSnapshot.docs.length,
-        'validTransactions': 0 as int,
-        'invalidTransactions': 0 as int,
+        'validTransactions': 0,
+        'invalidTransactions': 0,
         'errors': <String>[],
         'details': <Map<String, dynamic>>[],
       };
