@@ -660,7 +660,7 @@ I have read, understood, and agree to abide by all the above terms and condition
                               const SizedBox(height: 8),
                               _buildSummaryRow('Monthly Payment:', _calculateMonthlyPayment()),
                               _buildSummaryRow('Total Repayment:', _calculateTotalRepayment()),
-                              _buildSummaryRow('Interest Rate:', '${_interestRate}% per annum'),
+                              _buildSummaryRow('Interest Rate:', '$_interestRate% per annum'),
                             ],
                           ),
                         ),
