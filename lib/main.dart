@@ -215,7 +215,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
             return MaterialPageRoute(builder: (context) => const HomePage());
         }
       },
-      debugShowCheckedModeBanner: false,
+      // debugShowCheckedModeBanner: false, // Enable debug mode for better error handling
     );
   }
 
