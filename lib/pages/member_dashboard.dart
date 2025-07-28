@@ -6663,7 +6663,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
         onRefresh: _refreshAllData,
         child: _getCurrentScreen(activeLoans, overdueLoans, totalDue),
       ),
-<<<<<<< HEAD
+
       // Provide a minimal bottom navigation bar for TotalDueScreen
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
@@ -6693,7 +6693,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
         },
       ),
       floatingActionButton: null,
-=======
+
       bottomNavigationBar: _buildBottomNavigationBar(),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
@@ -6709,7 +6709,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
               child: const Icon(Icons.feedback),
             )
           : null,
->>>>>>> 72f5593a791b85f1417553cb3c361f30f42f1019
+
     );
   }
 }
