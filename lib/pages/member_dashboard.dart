@@ -1466,7 +1466,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
             ],
           ),
           const SizedBox(height: 16),
-          ...activeLoans.map((loan) => _buildMonthlyPaymentCard(loan)).toList(),
+          ...activeLoans.map((loan) => _buildMonthlyPaymentCard(loan)),
         ],
       ),
     );
@@ -1662,7 +1662,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                           ? 'Overdue by ${daysUntilPayment.abs()} days'
                           : isDueSoon
                           ? 'Due in $daysUntilPayment days'
-                          : 'In ${daysUntilPayment} days',
+                          : 'In $daysUntilPayment days',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: isOverdue
@@ -3179,7 +3179,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                   ),
                 ),
               )
-              .toList(),
+              ,
         ],
       ),
     );
@@ -3445,7 +3445,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                               },
                             ),
                           )
-                          .toList(),
+                          ,
                       const SizedBox(height: 20),
                     ],
 
@@ -3468,7 +3468,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                               },
                             ),
                           )
-                          .toList(),
+                          ,
                       const SizedBox(height: 20),
                     ],
 
@@ -6663,6 +6663,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
         onRefresh: _refreshAllData,
         child: _getCurrentScreen(activeLoans, overdueLoans, totalDue),
       ),
+<<<<<<< HEAD
       // Provide a minimal bottom navigation bar for TotalDueScreen
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
@@ -6692,6 +6693,23 @@ class _MemberDashboardState extends State<MemberDashboard> {
         },
       ),
       floatingActionButton: null,
+=======
+      bottomNavigationBar: _buildBottomNavigationBar(),
+      floatingActionButton: _currentIndex == 0
+          ? FloatingActionButton(
+              onPressed: _showLoanApplication,
+              backgroundColor: _primaryColor,
+              child: const Icon(Icons.add),
+            )
+          : _currentIndex == 3
+          ? FloatingActionButton(
+              onPressed: 
+              
+              _submitFeedback,
+              child: const Icon(Icons.feedback),
+            )
+          : null,
+>>>>>>> 72f5593a791b85f1417553cb3c361f30f42f1019
     );
   }
 }

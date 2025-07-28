@@ -53,14 +53,14 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
   bool _isProcessing = false;
   bool _isSpeaking = false;
 
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
   int _unreadNotifications = 0;
   String memberId = '';
   String memberName = '';
   String memberEmail = '';
 
   double _currentSavings = 0;
-  List<Loan> _loans = [];
+  final List<Loan> _loans = [];
   List<AppNotification> _notifications = [];
   List<SavingsHistory> _savingsHistory = [];
   final List<Transaction> _transactions = [];

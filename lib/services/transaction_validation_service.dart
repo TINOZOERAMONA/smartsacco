@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logging/logging.dart';
 
 class TransactionValidationService {
@@ -223,8 +222,8 @@ class TransactionValidationService {
       final validationResults = {
         'totalTransactions': transactionsSnapshot.docs.length,
         'totalSavings': savingsSnapshot.docs.length,
-        'validTransactions': 0 as int,
-        'invalidTransactions': 0 as int,
+        'validTransactions': 0,
+        'invalidTransactions': 0,
         'errors': <String>[],
         'details': <Map<String, dynamic>>[],
       };
