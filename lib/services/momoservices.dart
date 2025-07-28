@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math';// for random number generation
 import 'package:http/http.dart' as http;
-import 'package:uuid/uuid.dart';
-import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';// for generating new IDs
+import 'package:flutter/foundation.dart';// for debugprint
 import 'package:smartsacco/config/mtn_api_config.dart';
 
 class MomoService {
@@ -17,7 +17,7 @@ class MomoService {
   }
 
   // Request to Pay (Collection) - For deposits
-  Future<Map<String, dynamic>> requestPayment({
+  Future<Map<String, dynamic>> requestPayment({  
     required String phoneNumber,
     required double amount,
     required String externalId,
@@ -45,14 +45,14 @@ class MomoService {
       final response = await http.post(
         url,
         headers: headers,
-        body: jsonEncode(requestBody),
+        body: jsonEncode(requestBody), // Uses the http package to send a POST request to MTN’s collection endpoint.
       );
 
       debugPrint('MTN API Response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 202) {
         // Payment request accepted, check status
-        final status = await _checkRequestToPayStatus(externalId, referenceId);
+        final status = await _checkRequestToPayStatus(externalId, referenceId); // If failed, returns an error message from MTN’s 
         return {
           'success': true,
           'status': 'PENDING',

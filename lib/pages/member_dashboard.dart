@@ -1562,7 +1562,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
             ],
           ),
           const SizedBox(height: 16),
-          ...activeLoans.map((loan) => _buildMonthlyPaymentCard(loan)).toList(),
+          ...activeLoans.map((loan) => _buildMonthlyPaymentCard(loan)),
         ],
       ),
     );
@@ -1758,7 +1758,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                           ? 'Overdue by ${daysUntilPayment.abs()} days'
                           : isDueSoon
                           ? 'Due in $daysUntilPayment days'
-                          : 'In ${daysUntilPayment} days',
+                          : 'In $daysUntilPayment days',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         color: isOverdue
@@ -3275,7 +3275,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                   ),
                 ),
               )
-              .toList(),
+              ,
         ],
       ),
     );
@@ -3541,7 +3541,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                               },
                             ),
                           )
-                          .toList(),
+                          ,
                       const SizedBox(height: 20),
                     ],
 
@@ -3564,7 +3564,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                               },
                             ),
                           )
-                          .toList(),
+                          ,
                       const SizedBox(height: 20),
                     ],
 
@@ -6758,7 +6758,9 @@ class _MemberDashboardState extends State<MemberDashboard> {
             )
           : _currentIndex == 3
           ? FloatingActionButton(
-              onPressed: _submitFeedback,
+              onPressed: 
+              
+              _submitFeedback,
               child: const Icon(Icons.feedback),
             )
           : null,

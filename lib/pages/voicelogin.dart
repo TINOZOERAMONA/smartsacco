@@ -747,7 +747,7 @@ class _VoiceLoginPageState extends State<VoiceLoginPage>
                   border: Border.all(color: Colors.orange.shade200),
                 ),
                 child: Text(
-                  'Attempt ${loginAttempts} of ${maxAttempts}',
+                  'Attempt $loginAttempts of $maxAttempts',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.orange.shade800,

@@ -30,7 +30,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
 
   // Test results
   Map<String, dynamic>? _lastTestResult;
-  List<Map<String, dynamic>> _testHistory = [];
+  final List<Map<String, dynamic>> _testHistory = [];
 
   @override
   void initState() {
