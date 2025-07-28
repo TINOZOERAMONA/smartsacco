@@ -11,20 +11,21 @@ class MemberLoanDetailsPage extends StatefulWidget {
 }
 
 class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
-  // Constants and Formatters
+  // ==================== Constants and Formatters ====================
   final DateFormat _dateFormat = DateFormat('MMM dd, yyyy');
   final NumberFormat _currencyFormat = NumberFormat.currency(
     locale: 'en_UG',
     symbol: 'UGX',
   );
 
-  // State variables
+  // ==================== State Variables ====================
   late Stream<List<Map<String, dynamic>>> _loanStream;
   String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   double? _totalSavings;
   bool _isLoading = true;
 
+  // ==================== Lifecycle Methods ====================
   @override
   void initState() {
     super.initState();
@@ -37,7 +38,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     super.dispose();
   }
 
-  // Data initialization
+  // ==================== Data Initialization ====================
   Future<void> _initializeData() async {
     setState(() => _isLoading = true);
     _loanStream = _fetchUserLoans();
@@ -45,7 +46,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     setState(() => _isLoading = false);
   }
 
-  // Data fetching methods
+  // ==================== Data Fetching Methods ====================
   Future<void> _fetchTotalSavings() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -96,8 +97,11 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
         );
   }
 
-  // Loan status methods
-  Future<void> _updateLoanStatus(String loanId, String status) async {
+  // ==================== Loan Status Methods ====================
+  Future<void> _updateLoanStatus({
+    required String loanId,
+    required String status,
+  }) async {
     try {
       await FirebaseFirestore.instance
           .collection('users')
@@ -112,8 +116,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Loan $status successfully'),
-          behavior: SnackBarBehavior.floating,
+          content: Text('Loan $status successfully!'),
           backgroundColor: status == 'Approved' ? Colors.green : Colors.orange,
         ),
       );
@@ -121,13 +124,71 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating loan: $e'),
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  Future<void> _markLoanAsCompleted(String loanId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('loans')
+          .doc(loanId)
+          .update({
+            'status': 'Completed',
+            'completionDate': FieldValue.serverTimestamp(),
+          });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loan marked as completed!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteCompletedLoan(String loanId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('loans')
+          .doc(loanId)
+          .delete();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loan deleted successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // ==================== UI Helper Methods ====================
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'approved':
@@ -136,12 +197,14 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
         return Colors.orange;
       case 'rejected':
         return Colors.red;
+      case 'fully repaid':
+      case 'completed':
+        return Colors.blue;
       default:
         return Colors.grey;
     }
   }
 
-  // UI Components
   Widget _buildDetailRow(String label, String value, {bool highlight = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -171,10 +234,34 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     );
   }
 
+  Widget _buildFilterChip(String label, String value) {
+    return FilterChip(
+      label: Text(label),
+      selected: _statusFilter == value,
+      onSelected: (selected) {
+        setState(() => _statusFilter = selected ? value : 'All');
+      },
+      selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+      labelStyle: TextStyle(
+        color: _statusFilter == value
+            ? Theme.of(context).primaryColor
+            : Colors.grey[700],
+        fontWeight: FontWeight.w500,
+      ),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: _statusFilter == value
+              ? Theme.of(context).primaryColor
+              : Colors.grey[300]!,
+        ),
+      ),
+    );
+  }
+
+  // ==================== Loan Card Widget ====================
   Widget _buildLoanCard(Map<String, dynamic> loan) {
     final amount = (loan['amount'] ?? 0).toDouble();
     final repaid = (loan['repaidAmount'] ?? 0).toDouble();
-    final progress = amount > 0 ? repaid / amount : 0;
     final status = (loan['status'] ?? 'pending approval').toString();
     final loanId = loan['loanId']?.toString();
     final appDate = loan['applicationDateFormatted'];
@@ -182,6 +269,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     final purpose = loan['purpose']?.toString() ?? 'Not specified';
     final interestRate = (loan['interestRate'] ?? 0).toDouble();
     final totalRepayment = (loan['totalRepayment'] ?? amount).toDouble();
+    final remainingBalance = (loan['remainingBalance'] ?? amount).toDouble();
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -226,7 +314,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(status).withValues(alpha: 0.1),
+                      color: _getStatusColor(status).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _getStatusColor(status),
@@ -263,77 +351,22 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                 'Total Repayment',
                 _currencyFormat.format(totalRepayment),
               ),
-
-              // Progress bar
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'REPAYMENT PROGRESS',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Stack(
-                    children: [
-                      LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.grey[200],
-                        color: progress >= 1
-                            ? Colors.green
-                            : Theme.of(context).primaryColor,
-                        minHeight: 8,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      if (progress < 1)
-                        Positioned.fill(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: Text(
-                                '${(progress * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Repaid: ${_currencyFormat.format(repaid)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      Text(
-                        'Total: ${_currencyFormat.format(amount)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ],
+              _buildDetailRow(
+                'Remaining Balance',
+                _currencyFormat.format(remainingBalance),
               ),
 
-              // Action buttons for pending loans
-              if (status.toLowerCase() == 'pending approval' &&
-                  loanId != null) ...[
-                const SizedBox(height: 16),
+              // Action buttons
+              const SizedBox(height: 16),
+              if (status.toLowerCase() == 'pending approval' && loanId != null)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton(
-                      onPressed: () => _updateLoanStatus(loanId, 'Rejected'),
+                      onPressed: () => _updateLoanStatus(
+                        loanId: loanId,
+                        status: 'Rejected',
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.red,
                         side: const BorderSide(color: Colors.red),
@@ -349,7 +382,10 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () => _updateLoanStatus(loanId, 'Approved'),
+                      onPressed: () => _updateLoanStatus(
+                        loanId: loanId,
+                        status: 'Approved',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -365,7 +401,34 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                     ),
                   ],
                 ),
-              ],
+              
+              // Completion/Deletion buttons
+              if (status.toLowerCase() == 'approved' && loanId != null && remainingBalance <= 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => _markLoanAsCompleted(loanId),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue,
+                          side: const BorderSide(color: Colors.blue),
+                        ),
+                        child: const Text('MARK AS COMPLETED'),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: () => _deleteCompletedLoan(loanId),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                        ),
+                        child: const Text('DELETE LOAN'),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -373,6 +436,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     );
   }
 
+  // ==================== Loan Details Bottom Sheet ====================
   void _showLoanDetails(Map<String, dynamic> loan) {
     showModalBottomSheet(
       context: context,
@@ -383,7 +447,6 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
           color: Theme.of(context).scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -454,10 +517,6 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       'Interest Rate',
                       '${(loan['interestRate'] ?? 0).toStringAsFixed(2)}%',
                     ),
-                    _buildDetailRow(
-                      'Repaid Amount',
-                      _currencyFormat.format(loan['repaidAmount'] ?? 0),
-                    ),
                     if (loan['notes'] != null &&
                         loan['notes'].toString().isNotEmpty)
                       _buildDetailRow('Notes', loan['notes'].toString()),
@@ -487,30 +546,7 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
-    return FilterChip(
-      label: Text(label),
-      selected: _statusFilter == value,
-      onSelected: (selected) {
-        setState(() => _statusFilter = selected ? value : 'All');
-      },
-      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-      labelStyle: TextStyle(
-        color: _statusFilter == value
-            ? Theme.of(context).primaryColor
-            : Colors.grey[700],
-        fontWeight: FontWeight.w500,
-      ),
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: _statusFilter == value
-              ? Theme.of(context).primaryColor
-              : Colors.grey[300]!,
-        ),
-      ),
-    );
-  }
-
+  // ==================== Main Build Method ====================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -612,6 +648,8 @@ class _MemberLoanDetailsPageState extends State<MemberLoanDetailsPage> {
                       _buildFilterChip('Pending', 'Pending Approval'),
                       const SizedBox(width: 8),
                       _buildFilterChip('Rejected', 'Rejected'),
+                      const SizedBox(width: 8),
+                      _buildFilterChip('Completed', 'Completed'),
                     ],
                   ),
                 ),
