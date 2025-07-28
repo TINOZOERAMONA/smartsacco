@@ -1,4 +1,7 @@
+// ignore_for_file: unnecessary_null_comparison, unused_import
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:smartsacco/services/momoservices.dart';
 import 'package:smartsacco/config/mtn_api_config.dart';
@@ -18,11 +21,20 @@ class PaymentService {
   Future<Map<String, dynamic>> processDeposit({
     required String userId,
     required double amount,
-    required String phoneNumber,
+    required String phoneNumber, //Make it nullable
     String? description,
   }) async {
     try {
       debugPrint('Processing deposit: $amount for user: $userId');
+
+      //Add null check for phoneNumber
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        return {
+          'success': false,
+          'message': 'Phone number is required',
+          'error': 'PHONE_REQUIRED',
+        };
+      }
 
       // Validate phone number
       if (!_momoService.isValidPhoneNumber(phoneNumber)) {
@@ -361,11 +373,13 @@ class PaymentService {
 
   // Validate phone number
   bool isValidPhoneNumber(String phoneNumber) {
+    if (phoneNumber == Null) return false;
     return _momoService.isValidPhoneNumber(phoneNumber);
   }
 
   // Format phone number
   String formatPhoneNumber(String phoneNumber) {
+    if (phoneNumber == Null) return 'throw ArgumentError("Phone number cannot be null");';
     return _momoService.formatPhoneNumber(phoneNumber);
   }
 

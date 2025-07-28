@@ -99,17 +99,17 @@ class _LoginPageState extends State<LoginPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Login failed: ${e.message}"),
+          content: Text("Login Failed: ${e.message}"),
           backgroundColor: Colors.red,
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      _log.warning('Login error: $e');
+      _log.warning('Login Error: $e');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Login error: ${e.toString()}"),
+          content: Text("Login Error: ${e.toString()}"),
           backgroundColor: Colors.red,
         ),
       );
