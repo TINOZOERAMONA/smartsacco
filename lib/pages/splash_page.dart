@@ -342,7 +342,7 @@ class _SplashPageState extends State<SplashPage>
                           ],
                         ),
                         child: Icon(
-                          Icons.account_balance,
+                          Icons.account_balance,//the logo we are using for now
                           size: 60,
                           color: Colors.white,
                         ),
