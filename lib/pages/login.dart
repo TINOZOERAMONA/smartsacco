@@ -216,11 +216,11 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  "Note: Your account must be verified by an admin before you can log in.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
+                // const Text(
+                //   "Note: Your account must be verified by an admin before you can log in.",
+                //   textAlign: TextAlign.center,
+                //   style: TextStyle(color: Colors.grey),
+                // ),
                 TextButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/forgotpassword');
