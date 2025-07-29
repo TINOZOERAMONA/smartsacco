@@ -36,7 +36,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   // Registration data
   String fullName = "";
   String email = "";
-  String phoneNumber = "";
+  String phone = "";
   String pin = "";
   String confirmPin = "";
   String role = "";
@@ -93,6 +93,13 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
+
+
+    flutterTts.setCompletionHandler(() {
+      if (mounted && !isListening) {
+        _startListening();
+      }
+    });
   }
 
   Future<void> _startRegistrationProcess() async {
@@ -118,10 +125,10 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           message = "Thank you. Please confirm, did you say ${_speakDigits(tempValue)}? Say yes to confirm or no to try again.";
           break;
         case "pin":
-          message = "Thank you. Please confirm, did you say your PIN is $tempValue? Say yes to confirm or no to try again.";
+          message = "Thank you. Please confirm, did you say your PIN is ${_speakDigits(tempValue)}? Say yes to confirm or no to try again.";
           break;
         case "confirm_pin":
-          message = "Thank you. Please confirm, did you say your PIN confirmation is $tempValue? Say yes to confirm or no to try again.";
+          message = "Thank you. Please confirm, did you say your PIN confirmation is ${_speakDigits(tempValue)}? Say yes to confirm or no to try again.";
           break;
         case "role":
           message = "Thank you. Please confirm, did you say your role is $tempValue? Say yes to confirm or no to try again.";
@@ -148,27 +155,27 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           message = "Finally, please say your role. Say 'member' if you are a member, or say 'admin' if you are an administrator.";
           break;
         case "final_confirm":
-          message = "Let me read back all your details for final confirmation. Full name: $fullName. Email: $email.Phone number: ${_speakDigits(phoneNumber)} PIN: $pin. Role: $role. Say 'yes' to confirm everything, or say 'no' to make changes.";
+          message = "Let me read back all your details for final confirmation. Full name: $fullName. Email: $email.Phone number: ${_speakDigits(phone)} PIN: $pin. Role: $role. Say 'yes' to confirm everything, or say 'no' to make changes.";
           break;
       }
     }
 
-    try {
+    //try {
       await flutterTts.speak(message);
       
-      Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
-        if (mounted) {
-          _startListening();
-        }
-      });
-    } catch (e) {
-      _logger.warning("TTS Error: $e");
-      Future.delayed(Duration(seconds: 2), () {
-        if (mounted) {
-          _startListening();
-        }
-      });
-    }
+    //   Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
+    //     if (mounted) {
+    //       _startListening();
+    //     }
+    //   });
+    // } catch (e) {
+    //   _logger.warning("TTS Error: $e");
+    //   Future.delayed(Duration(seconds: 2), () {
+    //     if (mounted) {
+    //       _startListening();
+    //     }
+    //   });
+    //}
   }
 
   Future<void> _startListening() async {
@@ -408,7 +415,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
           email = tempValue;
           break;
         case "phone":
-          phoneNumber = tempValue;
+          phone = tempValue;
           break;
         case "pin":
           pin = tempValue;
@@ -462,11 +469,11 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
     
     flutterTts.speak(message);
     
-    Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
-      if (mounted) {
-        _startListening();
-      }
-    });
+    // Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
+    //   if (mounted) {
+    //     _startListening();
+    //   }
+    // });
   }
 
   String _getCurrentFieldName() {
@@ -476,7 +483,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       case "email":
         return "email address";
       case "phone":
-        return "phone number";
+        return "phone";
       case "pin":
         return "PIN";
       case "confirm_pin":
@@ -491,11 +498,11 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   void _askAgain(String message) {
     flutterTts.speak(message);
     
-    Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
-      if (mounted) {
-        _startListening();
-      }
-    });
+    // Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
+    //   if (mounted) {
+    //     _startListening();
+    //   }
+    // });
   }
 
   String _speakDigits(String number) {
@@ -506,11 +513,11 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   void _speakError(String message) {
     flutterTts.speak(message);
     
-    Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
-      if (mounted) {
-        _startListening();
-      }
-    });
+    // Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
+    //   if (mounted) {
+    //     _startListening();
+    //   }
+    // });
   }
 
   // Firebase Registration Method
@@ -539,7 +546,7 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'fullName': fullName,
         'email': email,
-        'phoneNumber': phoneNumber,
+        'phone': phone,
         'role': role,
         'pin': pin, 
         'createdAt': FieldValue.serverTimestamp(),
@@ -600,20 +607,20 @@ class _VoiceRegisterPageState extends State<VoiceRegisterPage>
   void _askRetry() {
     flutterTts.speak("Would you like to try creating your account again? Say 'yes' to retry or 'no' to go back to the beginning.");
     
-    Future.delayed(Duration(seconds: 5), () {
-      if (mounted) {
-        _startListening();
-      }
-    });
+    // Future.delayed(Duration(seconds: 5), () {
+    //   if (mounted) {
+    //     _startListening();
+    //   }
+    // });
   }
 
   void _showError(String message) {
     flutterTts.speak(message);
-    Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
-      if (mounted) {
-        _speakCurrentStep();
-      }
-    });
+    // Future.delayed(Duration(seconds: message.length ~/ 10 + 2), () {
+    //   if (mounted) {
+    //     _speakCurrentStep();
+    //   }
+    // });
   }
 
   String _getCurrentStepText() {
