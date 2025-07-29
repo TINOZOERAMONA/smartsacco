@@ -812,126 +812,247 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   Widget _buildHeaderSection() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 400;
-      
-      return Container(
-        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_primaryColor, _primaryColor.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_primaryColor, _primaryColor.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Icon(
-                Icons.person, 
-                size: isSmallScreen ? 24 : 30, 
-                color: Colors.white
-              ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(50),
             ),
-            SizedBox(width: isSmallScreen ? 12 : 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            child: const Icon(Icons.person, size: 30, color: Colors.white),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back,',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  memberName.length > 20
+                      ? '${memberName.substring(0, 20)}...'
+                      : memberName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  memberEmail.length > 30
+                      ? '${memberEmail.substring(0, 30)}...'
+                      : memberEmail,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.8),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid(
+    double savings,
+    int activeLoans,
+    int overdueLoans,
+    double totalDue,
+  ) {
+    // Calculate additional stats
+    final pendingLoans = _loans
+        .where(
+          (loan) =>
+              loan.status == 'Pending' || loan.status == 'Pending Approval',
+        )
+        .length;
+    final totalDeposits = _savingsHistory
+        .where((item) => item.type.toLowerCase().contains('deposit'))
+        .fold(0.0, (sum, item) => sum + item.amount);
+    final totalWithdrawals = _savingsHistory
+        .where((item) => item.type.toLowerCase().contains('withdraw'))
+        .fold(0.0, (sum, item) => sum + item.amount);
+    final recentTransactions = _savingsHistory.take(5).length;
+
+    // Get screen dimensions for responsive design
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
+    final childAspectRatio = isSmallScreen ? 1.5 : 1.3;
+
+    return Column(
+      children: [
+        // First row - Main financial info
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: childAspectRatio,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          children: [
+            GestureDetector(
+              onTap: () => _showSavingsDetails(),
+              child: Stack(
                 children: [
-                  Text(
-                    'Welcome back,',
-                    style: GoogleFonts.poppins(
-                      fontSize: isSmallScreen ? 12 : 14,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
+                  _buildStatCard(
+                    'Current Savings',
+                    _formatCurrency(savings),
+                    _savingsColor,
+                    Icons.account_balance_wallet,
+                    subtitle: 'Available Balance',
                   ),
-                  SizedBox(height: isSmallScreen ? 2 : 4),
-                  Text(
-                    memberName.length > (isSmallScreen ? 15 : 20)
-                        ? '${memberName.substring(0, isSmallScreen ? 15 : 20)}...'
-                        : memberName,
-                    style: GoogleFonts.poppins(
-                      fontSize: isSmallScreen ? 16 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () async {
+                        await _verifyBalanceCalculation();
+                        await _fetchSavingsData();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: isSmallScreen ? 2 : 4),
-                  Text(
-                    memberEmail.length > (isSmallScreen ? 25 : 30)
-                        ? '${memberEmail.substring(0, isSmallScreen ? 25 : 30)}...'
-                        : memberEmail,
-                    style: GoogleFonts.poppins(
-                      fontSize: isSmallScreen ? 10 : 12,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            GestureDetector(
+              onTap: () => _showActiveLoans(),
+              child: _buildStatCard(
+                'Active Loans',
+                activeLoans.toString(),
+                _activeLoansColor,
+                Icons.credit_card,
+                subtitle: 'Currently Active',
+              ),
+            ),
           ],
         ),
-      );
-    },
-  );
-}
-
-  Widget _buildStatsGrid(
-  double savings,
-  int activeLoans,
-  int overdueLoans,
-  double totalDue,
-) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 600;
-      final crossAxisCount = isSmallScreen ? 2 : 4;
-      final childAspectRatio = isSmallScreen ? 1.2 : 1.0;
-
-      return GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: childAspectRatio,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        children: [
-          _buildStatCard(
-            'Current Savings',
-            _formatCurrency(savings),
-            _savingsColor,
-            Icons.account_balance_wallet,
-            subtitle: 'Available Balance',
-          ),
-          _buildStatCard(
-            'Active Loans',
-            activeLoans.toString(),
-            _activeLoansColor,
-            Icons.credit_card,
-            subtitle: 'Currently Active',
-          ),
-          _buildStatCard(
-            'Overdue Loans',
-            overdueLoans.toString(),
-            _overdueColor,
-            Icons.warning,
-            subtitle: 'Requires Attention',
-          ),
-          _buildEnhancedTotalDueCard(totalDue),
-        ],
-      );
-    },
-  );
-}
+        const SizedBox(height: 12),
+        // Second row - Loan status
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: childAspectRatio,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          children: [
+            GestureDetector(
+              onTap: () => _showPendingLoans(),
+              child: _buildStatCard(
+                'Pending Loans',
+                pendingLoans.toString(),
+                Colors.blue,
+                Icons.pending_actions,
+                subtitle: 'Awaiting Approval',
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _showOverdueLoans(),
+              child: _buildStatCard(
+                'Overdue Loans',
+                overdueLoans.toString(),
+                _overdueColor,
+                Icons.warning,
+                subtitle: 'Requires Attention',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Third row - Transaction summary
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          childAspectRatio: childAspectRatio,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          children: [
+            GestureDetector(
+              onTap: () => _showDepositHistory(),
+              child: _buildStatCard(
+                'Total Deposits',
+                _formatCurrency(totalDeposits),
+                Colors.green,
+                Icons.trending_up,
+                subtitle: 'All Time',
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _showWithdrawalHistory(),
+              child: _buildStatCard(
+                'Total Withdrawals',
+                _formatCurrency(totalWithdrawals),
+                Colors.red,
+                Icons.trending_down,
+                subtitle: 'All Time',
+              ),
+            ),
+          ],
+        ),
+        // const SizedBox(height: 12),
+        // Fourth row - Additional info
+        // GridView.count(
+        //   shrinkWrap: true,
+        //   physics: const NeverScrollableScrollPhysics(),
+        //   crossAxisCount: 2,
+        //   childAspectRatio: childAspectRatio,
+        //   mainAxisSpacing: 12,
+        //   crossAxisSpacing: 12,
+        //   children: [
+        //     GestureDetector(
+        //       onTap: () => _showTotalDueDetails(),
+        //       child: _buildEnhancedTotalDueCard(totalDue),
+        //     ),
+        //     GestureDetector(
+        //       onTap: () => setState(() => _currentIndex = 2),
+        //       child: _buildStatCard(
+        //         'Recent Transactions',
+        //         recentTransactions.toString(),
+        //         Colors.purple,
+        //         Icons.receipt_long,
+        //         subtitle: 'Last 5 Transactions',
+        //       ),
+        //     ),
+        //   ],
+        // ),
+      ],
+    );
+  }
 
   Widget _buildEnhancedTotalDueCard(double totalDue) {
     // Calculate breakdown of total due
@@ -1105,207 +1226,182 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   Widget _buildStatCard(
-  String title,
-  String value,
-  Color color,
-  IconData icon, {
-  String? subtitle,
-}) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmall = constraints.maxWidth < 300;
-      final iconSize = isSmall ? 24.0 : 28.0;
-      final titleSize = isSmall ? 12.0 : 14.0;
-      final valueSize = isSmall ? 16.0 : 20.0;
-      final subtitleSize = isSmall ? 9.0 : 10.0;
+    String title,
+    String value,
+    Color color,
+    IconData icon, {
+    String? subtitle,
+  }) {
+    // Get screen dimensions for responsive design
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 400;
 
-      return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withOpacity(0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color, color.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Padding(
-          padding: EdgeInsets.all(isSmall ? 12 : 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: iconSize),
-              SizedBox(height: isSmall ? 6 : 8),
-              Flexible(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: isSmallScreen ? 24 : 28),
+            SizedBox(height: isSmallScreen ? 6 : 8),
+            Flexible(
+              child: Text(
+                title,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: isSmallScreen ? 12 : 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
                 child: Text(
-                  title,
+                  value,
                   style: GoogleFonts.poppins(
                     color: Colors.white,
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.w500,
+                    fontSize: isSmallScreen ? 16 : 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  subtitle,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: isSmallScreen ? 9 : 10,
+                    fontWeight: FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 4),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: valueSize,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 4),
-                Flexible(
-                  child: Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: subtitleSize,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
-      );
-    },
-  );
-}
+      ),
+    );
+  }
 
   Widget _buildQuickActionsSection() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 400;
-      final buttonHeight = isSmallScreen ? 70.0 : 80.0;
-      final iconSize = isSmallScreen ? 20.0 : 24.0;
-      final fontSize = isSmallScreen ? 10.0 : 12.0;
-
-      return Container(
-        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Actions',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: _textSecondary,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quick Actions',
-              style: GoogleFonts.poppins(
-                fontSize: isSmallScreen ? 16 : 18,
-                fontWeight: FontWeight.bold,
-                color: _textSecondary,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  'Deposit',
+                  Icons.add_circle,
+                  Colors.green,
+                  _showDepositDialog,
+                ),
               ),
-            ),
-            SizedBox(height: isSmallScreen ? 12 : 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    'Deposit',
-                    Icons.add_circle,
-                    Colors.green,
-                    _showDepositDialog,
-                    buttonHeight: buttonHeight,
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  'Withdraw',
+                  Icons.remove_circle,
+                  _isBlindUser ? Colors.grey : Colors.orange,
+                  _isBlindUser
+                      ? () {
+                          // This functionality has been removed as per instructions
+                        }
+                      : _initiateWithdrawal,
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
-                Expanded(
-                  child: _buildActionButton(
-                    'Withdraw',
-                    Icons.remove_circle,
-                    _isBlindUser ? Colors.grey : Colors.orange,
-                    _isBlindUser ? () {} : _initiateWithdrawal,
-                    buttonHeight: buttonHeight,
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  'Apply Loan',
+                  Icons.credit_card,
+                  _primaryColor,
+                  _showLoanApplication,
                 ),
-              ],
-            ),
-            SizedBox(height: isSmallScreen ? 8 : 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    'Apply Loan',
-                    Icons.credit_card,
-                    _primaryColor,
-                    _showLoanApplication,
-                    buttonHeight: buttonHeight,
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  'Transactions',
+                  Icons.receipt_long,
+                  Colors.purple,
+                  () => setState(() => _currentIndex = 2),
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
-                Expanded(
-                  child: _buildActionButton(
-                    'Transactions',
-                    Icons.receipt_long,
-                    Colors.purple,
-                    () => setState(() => _currentIndex = 2),
-                    buttonHeight: buttonHeight,
-                    iconSize: iconSize,
-                    fontSize: fontSize,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton(
     String title,
     IconData icon,
     Color color,
-    VoidCallback onPressed, {
-    double? buttonHeight,
-    double? iconSize,
-    double? fontSize,
-  }) {
+    VoidCallback onPressed,
+  ) {
     // Get screen dimensions for responsive design
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 400;
     final isDisabled = color == Colors.grey;
 
     return Container(
-      height: buttonHeight ?? (isSmallScreen ? 70 : 80),
+      height: isSmallScreen ? 70 : 80,
       decoration: BoxDecoration(
         color: color.withOpacity(isDisabled ? 0.05 : 0.1),
         borderRadius: BorderRadius.circular(12),
@@ -1324,7 +1420,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                 Icon(
                   icon,
                   color: isDisabled ? Colors.grey[400] : color,
-                  size: iconSize ?? (isSmallScreen ? 20 : 24),
+                  size: isSmallScreen ? 20 : 24,
                 ),
                 SizedBox(height: isSmallScreen ? 2 : 4),
                 Flexible(
@@ -1332,7 +1428,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
                     title,
                     style: GoogleFonts.poppins(
                       color: isDisabled ? Colors.grey[400] : color,
-                      fontSize: fontSize ?? (isSmallScreen ? 10 : 12),
+                      fontSize: isSmallScreen ? 10 : 12,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
@@ -5504,44 +5600,42 @@ class _MemberDashboardState extends State<MemberDashboard> {
   }
 
   Widget _buildBottomNavigationBar() {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      final isSmallScreen = constraints.maxWidth < 400;
-      
-      return BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: _primaryColor,
-        unselectedItemColor: _textSecondary,
-        type: BottomNavigationBarType.fixed,
-        selectedLabelStyle: GoogleFonts.poppins(
-          fontSize: isSmallScreen ? 10 : 12,
+    return BottomNavigationBar(
+      currentIndex: _currentIndex,
+      onTap: (index) => setState(() => _currentIndex = index),
+      selectedItemColor: _primaryColor,
+      unselectedItemColor: _textSecondary,
+      type: BottomNavigationBarType.fixed,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.dashboard),
+          label: 'Dashboard',
         ),
-        unselectedLabelStyle: GoogleFonts.poppins(
-          fontSize: isSmallScreen ? 10 : 12,
+        BottomNavigationBarItem(icon: Icon(Icons.savings), label: 'Savings'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history),
+          label: 'Transactions',
         ),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard, size: isSmallScreen ? 20 : 24),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.savings, size: isSmallScreen ? 20 : 24),
-            label: 'Savings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history, size: isSmallScreen ? 20 : 24),
-            label: 'Transactions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: isSmallScreen ? 20 : 24),
-            label: 'Notifications',
-          ),
-        ],
-      );
-    },
-  );
-}
+        BottomNavigationBarItem(
+          icon: Icon(Icons.notifications),
+          label: 'Notifications',
+        ),
+      ],
+    );
+  }
+
+  // Add withdrawal functionality (disabled for blind users)
+  void _initiateWithdrawal() {
+    if (_isBlindUser) {
+      // This functionality has been removed as per instructions
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => _buildWithdrawalDialog(),
+    );
+  }
 
   Widget _buildWithdrawalDialog() {
     final amountController = TextEditingController();
@@ -6189,14 +6283,6 @@ class _MemberDashboardState extends State<MemberDashboard> {
     _initiateWithdrawal();
   }
 
-  // Initiate withdrawal dialog
-  void _initiateWithdrawal() {
-    showDialog(
-      context: context,
-      builder: (context) => _buildWithdrawalDialog(),
-    );
-  }
-
   // Build enhanced dialog with overflow protection
   Widget _buildEnhancedDialog({
     required String title,
@@ -6663,37 +6749,6 @@ class _MemberDashboardState extends State<MemberDashboard> {
         onRefresh: _refreshAllData,
         child: _getCurrentScreen(activeLoans, overdueLoans, totalDue),
       ),
-
-      // Provide a minimal bottom navigation bar for TotalDueScreen
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.savings),
-            label: 'Savings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Transactions',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notifications',
-          ),
-        ],
-        onTap: (index) {
-          Navigator.of(context).pop(); // Go back to main dashboard on tap
-        },
-      ),
-      floatingActionButton: null,
-
       bottomNavigationBar: _buildBottomNavigationBar(),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton(
@@ -6709,7 +6764,6 @@ class _MemberDashboardState extends State<MemberDashboard> {
               child: const Icon(Icons.feedback),
             )
           : null,
-
     );
   }
 }
@@ -7136,141 +7190,75 @@ class TotalDueScreen extends StatelessWidget {
     required this.onPayment,
   });
 
-  String _getAppBarTitle() {
-    return 'Total Due';
-  }
-
   @override
-Widget build(BuildContext context) {
-  final activeLoans = loans
-      .where((loan) => loan.status == 'Active' || loan.status == 'Approved')
-      .length;
-  final overdueLoans = loans.where((loan) => loan.status == 'Overdue').length;
-  // Use the totalDue parameter passed to this widget
+  Widget build(BuildContext context) {
+    final activeLoans = loans.where((loan) => loan.status == 'Active').toList();
+    final overdueLoans = loans
+        .where((loan) => loan.status == 'Overdue')
+        .toList();
 
-  final Color bgColor = const Color(0xFFF5F6FA);
-  final Color primaryColor = Colors.blue; // Define the primary color here
-
-  return Scaffold(
-    backgroundColor: bgColor,
-    appBar: AppBar(
-      title: Text(
-        _getAppBarTitle(),
-        style: GoogleFonts.poppins(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-      backgroundColor: primaryColor,
-      elevation: 0,
-      actions: [
-        // Remove _currentIndex and _buildNotificationBadge if not available in this context
-        IconButton(
-          icon: const Icon(Icons.logout),
-          onPressed: () {
-            Navigator.of(context).pop(); // Or provide a suitable logout handler
-          },
-          tooltip: 'Logout',
-        ),
-      ],
-    ),
-    body: LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 600;
-        final padding = isSmallScreen 
-            ? const EdgeInsets.all(12) 
-            : const EdgeInsets.all(16);
-
-        return RefreshIndicator(
-          onRefresh: () async {},
-          child: SingleChildScrollView(
-            padding: padding,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.9,
+      maxChildSize: 0.9,
+      minChildSize: 0.5,
+      builder: (context, scrollController) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.drag_handle),
+              const SizedBox(height: 10),
+              Text(
+                'Total Due Summary',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              child: Column(
-                children: [
-                  // Show a summary of total due and the list of loans
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Total Due',
-                            style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[800],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            NumberFormat.currency(symbol: 'UGX ').format(totalDue),
-                            style: GoogleFonts.poppins(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue[700],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Active Loans: $activeLoans, Overdue Loans: $overdueLoans',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
+              const SizedBox(height: 16),
+              Card(
+                color: Colors.teal[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Total Amount Due',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(
+                        NumberFormat.currency(symbol: 'UGX ').format(totalDue),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal[700],
+                            ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  _buildLoanTypeSection('Loans Due', loans, context),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              if (overdueLoans.isNotEmpty) ...[
+                _buildLoanTypeSection('Overdue Loans', overdueLoans, context),
+                const SizedBox(height: 16),
+              ],
+              if (activeLoans.isNotEmpty) ...[
+                _buildLoanTypeSection('Active Loans', activeLoans, context),
+                const SizedBox(height: 16),
+              ],
+            ],
           ),
         );
       },
-    ),
-    bottomNavigationBar: BottomNavigationBar(
-      currentIndex: 0,
-      selectedItemColor: Colors.blue,
-      unselectedItemColor: Colors.grey,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.savings),
-          label: 'Savings',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.history),
-          label: 'Transactions',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications),
-          label: 'Notifications',
-        ),
-      ],
-      onTap: (index) {
-        Navigator.of(context).pop(); // Go back to main dashboard on tap
-      },
-    ),
-    floatingActionButton: null,
-  );
-}
+    );
+  }
 
-// Add a dummy refresh method to avoid undefined error
-Future<void> _refreshAllData() async {}
   Widget _buildLoanTypeSection(
     String title,
     List<Loan> loans,

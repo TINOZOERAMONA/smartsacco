@@ -53,14 +53,14 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
   bool _isProcessing = false;
   bool _isSpeaking = false;
 
-  final int _currentIndex = 0;
+  int _currentIndex = 0;
   int _unreadNotifications = 0;
   String memberId = '';
   String memberName = '';
   String memberEmail = '';
 
   double _currentSavings = 0;
-  final List<Loan> _loans = [];
+  List<Loan> _loans = [];
   List<AppNotification> _notifications = [];
   List<SavingsHistory> _savingsHistory = [];
   final List<Transaction> _transactions = [];
@@ -341,7 +341,7 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
       _confirmChoice("2", "Apply for a loan");
     } else if (command.contains('3') || command.contains('three')) {
       _confirmChoice("3", "check your savings");
-    } else if (command.contains('2') || command.contains('four')) {
+    } else if (command.contains('4') || command.contains('four')) {
       _confirmChoice("4", "check your active loans");
     } else if (command.contains('5') || command.contains('five')) {
       _confirmChoice("5", "check your amount due");
@@ -432,12 +432,12 @@ class _VoiceMemberDashboardState extends State<VoiceMemberDashboard> {
     switch (option) {
       case "1":
         _speak(
-          "For security reasons, to withdraw money please visit your SACCO administrator.",
+          "For security reasons, to withdraw money please visit your SACCO administrator. Please say a number between 1 to 8 to view other options",
         );
         break;
       case "2":
         _speak(
-          "For security reasons, to apply for a loan please visit your SACCO administrator.",
+          "For security reasons, to apply for a loan please visit your SACCO administrator. Please say a number between 1 to 8 to view other options",
         );
       case "3":
         _speakSavingsInfo();
