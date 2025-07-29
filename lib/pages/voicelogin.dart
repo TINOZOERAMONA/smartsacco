@@ -132,7 +132,7 @@ class _VoiceLoginPageState extends State<VoiceLoginPage>
     });
 
     try {
-      await flutterTts.speak("Welcome to SmartSacco login. Please say your email address.");
+      await flutterTts.speak("Welcome to SmartSacco login. Please spell your email address so that i can capture it easily.");
       
 
       if (mounted) _startListening();
