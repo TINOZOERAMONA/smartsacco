@@ -25,9 +25,15 @@ import 'package:smartsacco/pages/payment_status_screen.dart';
 import 'package:smartsacco/models/paymentconfirmation.dart';
 //import 'package:smartsacco/pages/settings_page.dart';
 import 'package:smartsacco/services/user_preferences_service.dart';
+import 'dart:io' as io;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (kDebugMode) {
+    io.HttpClient.enableTimelineLogging = true;
+  }
+
   runApp(const LoadingApp()); // Show loading UI quickly
 
   try {
@@ -52,6 +58,7 @@ class LoadingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
@@ -138,7 +145,6 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
         '/login': (context) => const LoginPage(),
         '/forgotpassword': (context) => ForgotPasswordPage(),
         '/register': (context) => const RegisterPage(),
-        // Voice-first routes for blind users
         '/voiceWelcome': (context) => const VoiceWelcomeScreen(),
         '/voiceRegister': (context) => const VoiceRegisterPage(),
         '/voiceLogin': (context) => const VoiceLoginPage(),
@@ -215,7 +221,7 @@ class _SaccoDashboardAppState extends State<SaccoDashboardApp> {
             return MaterialPageRoute(builder: (context) => const HomePage());
         }
       },
-      // debugShowCheckedModeBanner: false, // Enable debug mode for better error handling
+      debugShowCheckedModeBanner: false,
     );
   }
 
