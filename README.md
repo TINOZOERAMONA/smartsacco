@@ -204,3 +204,107 @@ class MTNApiConfig {
 - **User Control**: Full control over personal data
 - **Transparency**: Clear data usage policies
 - **Compliance**: GDPR and local privacy law compliance
+
+## 📊 Analytics & Reporting
+
+### User Analytics
+- **Feature Usage**: Track most used features
+- **Error Monitoring**: Identify and resolve issues
+- **Performance Metrics**: App performance monitoring
+
+### Financial Reports
+- **Transaction Summaries**: Daily, monthly reports
+- **Payment Success Rates**: Track payment completion rates
+- **Revenue Analytics**: Financial performance insights
+- **User Activity**: Member engagement metrics
+
+### Admin Dashboard
+- **Real-time Monitoring**: Live system status
+- **Member Management**: User account administration
+- **Loan Applications**: Loan approval workflow
+- **System Reports**: Comprehensive system analytics
+
+## ♿ Accessibility Features
+
+### Voice-First Design
+- **Complete Voice Navigation**: Some features accessible via voice
+- **Contextual Help**: Voice guidance through some parts of the app
+- **Error Recovery**: Intelligent retry mechanisms
+
+### Visual Accessibility:
+- **Haptic Feedback**: Tactile response for actions
+
+## 🛠️ Development
+
+### Project Structure
+```
+smartsacco/
+├── lib/
+│   ├── config/           # Configuration files
+│   ├── models/           # Data models
+│   ├── pages/            # UI pages
+│   ├── services/         # Business logic services
+│   ├── utils/            # Utility functions
+│   └── widgets/          # Reusable UI components
+├── android/              # Android-specific code
+├── ios/                  # iOS-specific code
+├── web/                  # Web platform code
+├── test/                 # Test files
+└── webhook-server/       # Payment callback server
+```
+### Key Dependencies
+```yaml
+dependencies:
+  flutter: ^3.32.6
+  firebase_core: ^3.15.1
+  firebase_auth: ^5.6.2
+  cloud_firestore: ^5.6.11
+  flutter_tts: ^4.2.3
+  speech_to_text: ^7.2.0
+  http: ^1.4.0
+  shared_preferences: ^2.5.3
+  permission_handler: ^12.0.1
+  logging: ^1.3.0
+  uuid: ^4.3.3
+  crypto: ^3.0.3
+```
+### Testing
+```bash
+# Run unit tests
+flutter test
+
+# Run widget tests
+flutter test test/widget_test.dart
+
+# Run integration tests
+flutter drive --target=test_driver/app.dart
+```
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow Flutter best practices
+- Maintain accessibility standards
+- Add comprehensive tests
+- Update documentation
+- Ensure voice navigation works
+
+## 🙏 Acknowledgments
+
+- **MTN Group** for Mobile Money API
+- **Firebase** for backend services
+- **Flutter Team** for the amazing framework
+- **Accessibility Community** for guidance and feedback
+- **Open Source Contributors** for their valuable contributions
+
+---
+
+**Made with ❤️ for the visually impaired community**
+
+*SmartSacco - Empowering financial independence through voice technology*
+
