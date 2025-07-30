@@ -9,16 +9,7 @@ import 'package:flutter/material.dart';
 
 
 
-  Deposit({
-    required this.id,
-    required this.amount,
-    required this.date,
-    required this.method,
-    required this.status,
-    required this.reference,
-    this.phoneNumber,
-    this.transactionId,
-  });
+ 
 
   factory Deposit.fromJson(Map<String, dynamic> json) {
     return Deposit(
