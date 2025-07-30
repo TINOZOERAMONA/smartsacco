@@ -4,7 +4,24 @@ enum NotificationType {
   promotion,
   general,
 }
+class AppNotification {
+  final String id;
+  final String title;
+  final String message;
+  final DateTime date;
+  final NotificationType type;
+  bool isRead;
+  final String? actionUrl;
 
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.date,
+    required this.type,
+    this.isRead = false,
+    this.actionUrl,
+  });
 
 
 
