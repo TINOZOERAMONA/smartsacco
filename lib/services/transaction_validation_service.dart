@@ -1,16 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logging/logging.dart';
 
+//service for validating and verifying financial transactions in firestore
+//handles deposit/withdrawal validation,integrity checks and statistics
 class TransactionValidationService {
   static final TransactionValidationService _instance =
       TransactionValidationService._internal();
   factory TransactionValidationService() => _instance;
   TransactionValidationService._internal();
 
+ //logger for service operations
   final Logger _logger = Logger('TransactionValidationService');
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Validate deposit transaction
+//Validates a deposit transaction by checking:
+  // 1. Transaction exists in user's transactions collection
+  // 2. Amount, type, method, and status match expected values
+  // 3. Corresponding savings record exists
   Future<Map<String, dynamic>> validateDepositTransaction({
     required String userId,
     required double amount,
@@ -40,7 +46,7 @@ class TransactionValidationService {
 
       final transactionData = transactionDoc.data()!;
 
-      // Validate transaction data
+    // Validate transaction data matches expected values
       if (transactionData['amount'] != amount) {
         return {
           'valid': false,
@@ -76,7 +82,7 @@ class TransactionValidationService {
         };
       }
 
-      // Check if savings record exists
+     // Verify corresponding savings record exists
       final savingsQuery = await _firestore
           .collection('users')
           .doc(userId)
@@ -98,7 +104,7 @@ class TransactionValidationService {
 
       final savingsData = savingsQuery.docs.first.data();
 
-      // Validate savings data
+      // Validate savings amount matches transaction amount
       if (savingsData['amount'] != amount) {
         return {
           'valid': false,
@@ -126,7 +132,9 @@ class TransactionValidationService {
     }
   }
 
-  // Validate withdrawal transaction
+   // Validates a withdrawal transaction by checking:
+  // 1. Transaction exists with matching reference
+  // 2. Amount and status match expected values
   Future<Map<String, dynamic>> validateWithdrawalTransaction({
     required String userId,
     required double amount,
@@ -160,7 +168,7 @@ class TransactionValidationService {
 
       final transactionData = transactionQuery.docs.first.data();
 
-      // Validate transaction data
+      // Validate transaction amount matches expected amount
       if (transactionData['amount'] != amount) {
         return {
           'valid': false,
@@ -196,14 +204,16 @@ class TransactionValidationService {
     }
   }
 
-  // Validate all transactions for a user
+  // Validates all transactions for a user by:
+  // 1. Checking each transaction has required fields
+  // 2. Verifying deposits have corresponding savings records
   Future<Map<String, dynamic>> validateAllUserTransactions(
     String userId,
   ) async {
     try {
       _logger.info('Validating all transactions for user: $userId');
 
-      // Get all transactions
+      // Get all transactions and savings records
       final transactionsSnapshot = await _firestore
           .collection('users')
           .doc(userId)
@@ -299,7 +309,10 @@ class TransactionValidationService {
     }
   }
 
-  // Verify transaction data integrity
+  // Verifies transaction integrity by:
+  // 1. Calculating expected savings from all transactions
+  // 2. Comparing with actual savings records
+  /// 3. Checking for balance consistency
   Future<Map<String, dynamic>> verifyTransactionIntegrity(String userId) async {
     try {
       _logger.info('Verifying transaction integrity for user: $userId');
@@ -321,6 +334,8 @@ class TransactionValidationService {
       double expectedSavings = 0;
       final transactionDetails = <Map<String, dynamic>>[];
 
+    
+      // Calculate expected savings from transactions
       for (var doc in transactionsSnapshot.docs) {
         final data = doc.data();
         final type = data['type'] as String?;
@@ -359,6 +374,7 @@ class TransactionValidationService {
         }
       }
 
+      // Check if balances match (with tolerance for floating point errors)
       final balanceDifference = (expectedSavings - actualSavings).abs();
       final isBalanced =
           balanceDifference <
@@ -386,7 +402,11 @@ class TransactionValidationService {
     }
   }
 
-  // Get transaction statistics
+  // Generates transaction statistics including:
+  // - Total deposits/withdrawals
+  // - Transaction counts by status
+  // - Method usage statistics
+  // - Monthly transaction breakdown
   Future<Map<String, dynamic>> getTransactionStatistics(String userId) async {
     try {
       _logger.info('Getting transaction statistics for user: $userId');
@@ -397,7 +417,7 @@ class TransactionValidationService {
           .collection('transactions')
           .orderBy('date', descending: true)
           .get();
-
+       // Initialize statistics counters
       double totalDeposits = 0;
       double totalWithdrawals = 0;
       int depositCount = 0;
@@ -408,7 +428,7 @@ class TransactionValidationService {
 
       final methodStats = <String, int>{};
       final monthlyStats = <String, Map<String, dynamic>>{};
-
+     // Process each transaction
       for (var doc in transactionsSnapshot.docs) {
         final data = doc.data();
         final type = data['type'] as String?;
@@ -416,7 +436,8 @@ class TransactionValidationService {
         final status = data['status'] as String?;
         final method = data['method'] as String?;
         final date = data['date'] as Timestamp?;
-
+       
+        // Update deposit/withdrawal totals
         if (type == 'Deposit' && amount != null) {
           totalDeposits += amount;
           depositCount++;
@@ -424,7 +445,8 @@ class TransactionValidationService {
           totalWithdrawals += amount;
           withdrawalCount++;
         }
-
+      
+       // Update status counters
         if (status == 'Completed') {
           completedTransactions++;
         } else if (status == 'Pending') {
@@ -433,10 +455,12 @@ class TransactionValidationService {
           failedTransactions++;
         }
 
+       // Update method statistics
         if (method != null) {
           methodStats[method] = (methodStats[method] ?? 0) + 1;
         }
 
+       // Update monthly statistics
         if (date != null) {
           final monthKey =
               '${date.toDate().year}-${date.toDate().month.toString().padLeft(2, '0')}';

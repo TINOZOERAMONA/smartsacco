@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+//categories og feedback classification
 enum FeedbackCategory {
   general,
   account,
@@ -13,6 +14,7 @@ enum FeedbackCategory {
   suggestion
 }
 
+//feedback submission page for SACCO members
 class SaccoFeedbackPage extends StatefulWidget {
   const SaccoFeedbackPage({super.key});
 
@@ -21,22 +23,28 @@ class SaccoFeedbackPage extends StatefulWidget {
 }
 
 class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
+   // Form and field controllers
   final _formKey = GlobalKey<FormState>();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   final _memberIdController = TextEditingController();
+
+  
+  // Form state variables
   FeedbackCategory _selectedCategory = FeedbackCategory.general;
   bool _isSubmitting = false;
   final List<PlatformFile> _attachments = [];
 
   @override
   void dispose() {
+    // Clean up controllers when widget is disposed
     _subjectController.dispose();
     _messageController.dispose();
     _memberIdController.dispose();
     super.dispose();
   }
 
+   // Opens file picker for attachments
   Future<void> _pickFiles() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -55,6 +63,8 @@ class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
     }
   }
 
+  
+  // Handles form submission
   Future<void> _submitFeedback() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -63,12 +73,14 @@ class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
     try {
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 2));
-
+ 
+    // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Feedback submitted successfully!')),
       );
       _clearForm();
     } catch (e) {
+      // Handle submission errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error submitting feedback: $e')),
       );
@@ -76,7 +88,7 @@ class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
       setState(() => _isSubmitting = false);
     }
   }
-
+// Resets the form to initial state
   void _clearForm() {
     _subjectController.clear();
     _messageController.clear();
@@ -104,6 +116,7 @@ class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+                 // Header section
               Text(
                 'We value your feedback',
                 style: GoogleFonts.poppins(
@@ -119,6 +132,7 @@ class _SaccoFeedbackPageState extends State<SaccoFeedbackPage> {
                 ),
               ),
               const SizedBox(height: 24),
+              // Member ID field
               TextFormField(
                 controller: _memberIdController,
                 decoration: const InputDecoration(

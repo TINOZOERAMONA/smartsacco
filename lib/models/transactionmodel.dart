@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+//represents financial transaction in the sacco system
 class Transaction {
   final String id;
   final double amount;
@@ -11,6 +12,7 @@ class Transaction {
   final String? reference;
   final String? phoneNumber;
 
+// Creates a new transaction record
   Transaction({
     required this.id,
     required this.amount,
@@ -22,9 +24,12 @@ class Transaction {
     this.phoneNumber,
   });
 
+// Formats the transaction date as "Jan 1, 2024"
   String getFormattedDate() => DateFormat('MMM d, y').format(date);
+  // Formats the amount with currency symbol (e.g., "UGX 50,000")
   String getAmountText() => NumberFormat.currency(symbol: 'UGX ').format(amount);
 
+// Returns a color based on transaction status:
   Color getStatusColor() {
     switch (status) {
       case 'Completed':
@@ -38,6 +43,8 @@ class Transaction {
     }
   }
 
+ // Creates a Transaction from JSON data (API response)
+  // Throws FormatException if date parsing fails
    factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
       id: json['id'],
@@ -51,6 +58,7 @@ class Transaction {
     );
   }
 
+// Converts the transaction to JSON format (for API requests)
   Map<String, dynamic> toJson() => {
     'id': id,
     'amount': amount,

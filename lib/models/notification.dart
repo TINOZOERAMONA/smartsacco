@@ -1,18 +1,25 @@
+//Types of notifications supported in the application
 enum NotificationType {
   payment,
   loan,
   promotion,
   general,
 }
+
+// Represents a notification in the application with all relevant metadata
 class AppNotification {
   final String id;
   final String title;
   final String message;
   final DateTime date;
   final NotificationType type;
+
+  // Whether the user has viewed this notification
   bool isRead;
+  // Optional deep link for handling notification taps
   final String? actionUrl;
 
+// Creates a new notification instance
   AppNotification({
     required this.id,
     required this.title,
@@ -25,7 +32,8 @@ class AppNotification {
 
 
 
-
+ // Creates an AppNotification from JSON data (for API responses)
+  // Throws FormatException if date parsing fails
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
@@ -39,6 +47,7 @@ class AppNotification {
     );
   }
 
+// Converts the notification to JSON format (for API requests)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
