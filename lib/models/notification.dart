@@ -4,7 +4,6 @@ enum NotificationType {
   promotion,
   general,
 }
-
 class AppNotification {
   final String id;
   final String title;
@@ -23,6 +22,10 @@ class AppNotification {
     this.isRead = false,
     this.actionUrl,
   });
+
+
+
+
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(

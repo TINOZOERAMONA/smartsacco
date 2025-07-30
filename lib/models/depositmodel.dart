@@ -4,6 +4,7 @@
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
+
 class Deposit {
   final String id;
   final double amount;
@@ -14,7 +15,8 @@ class Deposit {
   final String? phoneNumber;
   final String? transactionId;
 
-  Deposit({
+
+ Deposit({
     required this.id,
     required this.amount,
     required this.date,
@@ -24,6 +26,7 @@ class Deposit {
     this.phoneNumber,
     this.transactionId,
   });
+ 
 
   factory Deposit.fromJson(Map<String, dynamic> json) {
     return Deposit(

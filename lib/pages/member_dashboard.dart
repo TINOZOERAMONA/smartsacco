@@ -2222,7 +2222,7 @@ class _MemberDashboardState extends State<MemberDashboard> {
             ),
             const SizedBox(height: 4),
             Text(
-              'You have no active or overdue loans at this time',
+              'You have no overdue loans at this time',
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 color: Colors.green.withOpacity(0.7),
