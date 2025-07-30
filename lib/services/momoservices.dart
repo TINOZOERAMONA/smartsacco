@@ -47,6 +47,7 @@ class MomoService {
 
       debugPrint('Request body: ${jsonEncode(requestBody)}');
 
+     // Execute the POST request to MTN's API
       final response = await http.post(
         url,
         headers: headers,
@@ -85,7 +86,13 @@ class MomoService {
     }
   }
 
-  // Transfer (Disbursement) - For withdrawals
+
+   // Transfers money from SACCO to user (Disbursement API)
+  // [phoneNumber]: Recipient's MTN number
+  // [amount]: Amount to transfer
+  // [externalId]: Unique reference from your system
+  // [payeeMessage]: Message shown to recipient
+  
   Future<Map<String, dynamic>> transferMoney({
     required String phoneNumber,
     required double amount,
@@ -96,6 +103,8 @@ class MomoService {
       debugPrint('Initiating MTN MoMo transfer...');
       debugPrint('Config: ${MTNApiConfig.configSummary}');
 
+    
+      // Disbursement API endpoint for sending money
       final url = Uri.parse('${MTNApiConfig.disbursementUrl}/v1_0/transfer');
       final referenceId = Uuid().v4();
       final headers = await _getDisbursementHeaders(externalId, referenceId);
@@ -152,6 +161,9 @@ class MomoService {
   }
 
   // Check Request to Pay Status (Collection)
+   // Checks status of a collection/payment request
+  // [externalId]: Your original transaction reference
+  // [referenceId]: MTN's transaction reference
   Future<Map<String, dynamic>> _checkRequestToPayStatus(
     String externalId,
     String referenceId,
@@ -194,6 +206,10 @@ class MomoService {
   }
 
   // Check Transfer Status (Disbursement)
+  
+  // Checks status of a disbursement/transfer
+  // [externalId]: Your original transaction reference
+  
   Future<Map<String, dynamic>> _checkTransferStatus(String externalId) async {
     try {
       final url = Uri.parse(
@@ -225,7 +241,7 @@ class MomoService {
     }
   }
 
-  // Get account balance
+  // Gets the current balance of the collection account
   Future<Map<String, dynamic>> getAccountBalance() async {
     try {
       final url = Uri.parse(
@@ -256,7 +272,8 @@ class MomoService {
     }
   }
 
-  // Get account holder info
+ 
+  // Retrieves basic info about an account holder
   Future<Map<String, dynamic>> getAccountHolderInfo(String phoneNumber) async {
     try {
       final url = Uri.parse(
@@ -288,6 +305,8 @@ class MomoService {
   }
 
   // Get headers for Collection API requests
+  // [externalId]: Your transaction reference
+  // [referenceId]: Optional MTN reference ID
   Future<Map<String, String>> _getCollectionHeaders(
     String externalId,
     [String? referenceId]
