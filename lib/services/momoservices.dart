@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';// for debugprint
 import 'package:smartsacco/config/mtn_api_config.dart';
 
 class MomoService {
-  // Generate transaction ID
+  // Generate transaction ID with 12 alphanumeric characters
+
+  //Used as a fallback when externalId is not provided
   static String generateTransactionId() {
     final random = Random();
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -26,11 +28,14 @@ class MomoService {
     try {
       debugPrint('Initiating MTN MoMo payment request...');
       debugPrint('Config: ${MTNApiConfig.configSummary}');
+    
+    //Construct the API endpoint URL for payment requests
 
       final url = Uri.parse('${MTNApiConfig.collectionUrl}/v1_0/requesttopay');
-      final referenceId = Uuid().v4();
+      final referenceId = Uuid().v4(); //generate uuid refference
       final headers = await _getCollectionHeaders(externalId, referenceId);
-
+    
+    //Prepare the request payload according to MTN API
       final requestBody = {
         'amount': amount.toString(),
         'currency': MTNApiConfig.currency,
