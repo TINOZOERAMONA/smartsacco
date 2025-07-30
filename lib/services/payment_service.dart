@@ -68,7 +68,7 @@ class PaymentService {
             'description': description ?? 'SACCO Deposit',
             'reference': externalId,
           });
-
+          
       // Request payment from MTN
       final paymentResult = await _momoService.requestPayment(
         phoneNumber: formattedPhone,
@@ -207,7 +207,7 @@ class PaymentService {
       return {
         'success': false,
         'message':
-            'An error occurred while processing your withdrawal. Please try again.',
+            'An error occurred when processing your withdrawal. Please try again.',
         'error': 'PROCESSING_ERROR',
         'details': e.toString(),
       };
