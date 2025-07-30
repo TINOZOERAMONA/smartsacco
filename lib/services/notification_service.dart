@@ -60,7 +60,7 @@ class NotificationService {
 
       // Get FCM token
       String? token = await _firebaseMessaging.getToken();
-    await _saveTokenToDatabase(token);
+    await _saveTokenToDatabase(token!);
         
       // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen(_saveTokenToDatabase);
