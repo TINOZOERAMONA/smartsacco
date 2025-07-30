@@ -5,7 +5,15 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
 
-
+class Deposit {
+  final String id;
+  final double amount;
+  final DateTime date;
+  final String method;
+  final String status;
+  final String reference;
+  final String? phoneNumber;
+  final String? transactionId;
 
 
  Deposit({
