@@ -8,12 +8,16 @@ import 'package:smartsacco/services/analytics_service.dart';
 import 'package:smartsacco/services/notification_service.dart';
 import 'package:smartsacco/models/notification.dart';
 
+
+//Implements singleton pattern to ensure consistent error handling across the app
 class ErrorHandlingService {
+  //singleton instance
   static final ErrorHandlingService _instance =
       ErrorHandlingService._internal();
   factory ErrorHandlingService() => _instance;
   ErrorHandlingService._internal();
 
+   //dependencies
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final AnalyticsService _analytics = AnalyticsService();
@@ -37,6 +41,7 @@ class ErrorHandlingService {
 
   // Error tracking
   final List<Map<String, dynamic>> _errorLog = [];
+  // Stream controller for real-time error notifications
   final StreamController<Map<String, dynamic>> _errorStreamController =
       StreamController<Map<String, dynamic>>.broadcast();
 
@@ -44,18 +49,18 @@ class ErrorHandlingService {
 
   // Initialize error handling
   Future<void> initialize() async {
-    // Set up global error handlers
+    // Set up Flutter framework error handler
     FlutterError.onError = (FlutterErrorDetails details) {
       _handleFlutterError(details);
     };
 
-    // Set up uncaught error handler
+    // Set up uncaught exception handler
     PlatformDispatcher.instance.onError = (error, stack) {
       _handleUncaughtError(error, stack);
       return true;
     };
 
-    // Set up periodic error reporting
+     // Set up periodic error reporting (every 5 minutes)
     Timer.periodic(const Duration(minutes: 5), (timer) {
       _reportErrorsToServer();
     });
@@ -80,7 +85,7 @@ class ErrorHandlingService {
     _errorStreamController.add(error);
   }
 
-  // Handle uncaught errors
+ // Handles uncaught exceptions from Dart code
   void _handleUncaughtError(Object error, StackTrace stack) {
     final errorData = {
       'type': _errorTypeSystem,
@@ -95,7 +100,10 @@ class ErrorHandlingService {
     _errorStreamController.add(errorData);
   }
 
-  // Log error
+  // Logs an error to multiple destinations:
+  // 1. In-memory log
+  // 2. Local storage (SharedPreferences)
+  // 3. Analytics service
   Future<void> _logError(Map<String, dynamic> error) async {
     try {
       // Add to local log
@@ -137,14 +145,18 @@ class ErrorHandlingService {
     }
   }
 
-  // Report errors to server
+  // Reports collected errors to the server (Firestore)
   Future<void> _reportErrorsToServer() async {
     try {
       if (_errorLog.isEmpty) return;
 
+    
+      // Copy and clear the current log
       final errorsToReport = List<Map<String, dynamic>>.from(_errorLog);
       _errorLog.clear();
 
+     
+      // Batch upload to Firestore
       for (final error in errorsToReport) {
         await _firestore.collection('error_logs').add({
           ...error,
@@ -158,7 +170,7 @@ class ErrorHandlingService {
     }
   }
 
-  // Handle network errors
+  // Handles network-related errors with appropriate logging and user notification
   Future<void> handleNetworkError(
     String operation,
     dynamic error, {
@@ -183,7 +195,7 @@ class ErrorHandlingService {
     );
   }
 
-  // Handle authentication errors
+ // Handles authentication failures with appropriate logging and user notification
   Future<void> handleAuthenticationError(
     String operation,
     dynamic error, {
@@ -206,7 +218,7 @@ class ErrorHandlingService {
     );
   }
 
-  // Handle database errors
+// Handles Firestore/database errors with appropriate logging and user notification
   Future<void> handleDatabaseError(
     String operation,
     dynamic error, {
@@ -231,7 +243,7 @@ class ErrorHandlingService {
     );
   }
 
-  // Handle payment errors
+  // Handles payment processing errors with appropriate logging and user notification
   Future<void> handlePaymentError(
     String operation,
     dynamic error, {
@@ -256,7 +268,7 @@ class ErrorHandlingService {
     );
   }
 
-  // Handle voice errors
+ // Handles voice command processing errors with appropriate logging and user notification
   Future<void> handleVoiceError(
     String operation,
     dynamic error, {
@@ -281,7 +293,7 @@ class ErrorHandlingService {
     );
   }
 
-  // Handle validation errors
+  // Handles data validation errors with appropriate logging and user notification
   Future<void> handleValidationError(
     String field,
     String message, {
@@ -301,7 +313,7 @@ class ErrorHandlingService {
     await _showUserFriendlyError('Validation Error', message);
   }
 
-  // Show user-friendly error message
+// Displays user-friendly error notifications through the notification service
   Future<void> _showUserFriendlyError(String title, String message) async {
     try {
       // Send notification
@@ -326,7 +338,7 @@ class ErrorHandlingService {
     }
   }
 
-  // Get error statistics
+  // Generates statistics about recent errors
   Map<String, dynamic> getErrorStatistics() {
     final stats = <String, dynamic>{};
     final now = DateTime.now();
@@ -360,8 +372,7 @@ class ErrorHandlingService {
 
     return stats;
   }
-
-  // Get recent errors
+// Returns the most recent errors (sorted by timestamp)
   List<Map<String, dynamic>> getRecentErrors({int limit = 10}) {
     final sortedErrors = List<Map<String, dynamic>>.from(_errorLog);
     sortedErrors.sort((a, b) {
@@ -373,7 +384,7 @@ class ErrorHandlingService {
     return sortedErrors.take(limit).toList();
   }
 
-  // Clear error log
+ // Clears all error logs from memory and local storage
   Future<void> clearErrorLog() async {
     try {
       _errorLog.clear();
@@ -391,7 +402,7 @@ class ErrorHandlingService {
     }
   }
 
-  // Test error handling
+  // Tests the error handling system by generating sample errors
   Future<void> testErrorHandling() async {
     try {
       // Simulate different types of errors
@@ -410,12 +421,14 @@ class ErrorHandlingService {
     final recommendations = <String>[];
     final stats = getErrorStatistics();
 
+     // High error rate recommendation
     if (stats['total_errors_24h'] > 10) {
       recommendations.add(
         'High error rate detected. Consider checking system stability.',
       );
     }
-
+   
+   // Network error recommendation
     final networkErrors = stats['errors_by_type']['network'] ?? 0;
     if (networkErrors > 5) {
       recommendations.add(
@@ -423,6 +436,8 @@ class ErrorHandlingService {
       );
     }
 
+   
+    // Authentication error recommendation
     final authErrors = stats['errors_by_type']['authentication'] ?? 0;
     if (authErrors > 3) {
       recommendations.add(
@@ -430,6 +445,7 @@ class ErrorHandlingService {
       );
     }
 
+     // Critical error recommendation
     final criticalErrors = stats['errors_by_severity']['critical'] ?? 0;
     if (criticalErrors > 0) {
       recommendations.add(
@@ -440,7 +456,7 @@ class ErrorHandlingService {
     return recommendations;
   }
 
-  // Dispose resources
+  // Cleans up resources when the service is no longer needed
   void dispose() {
     _errorStreamController.close();
   }

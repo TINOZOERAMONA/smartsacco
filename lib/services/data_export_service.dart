@@ -7,6 +7,9 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:smartsacco/services/analytics_service.dart';
 
+
+/// Service for exporting, importing, and sharing application data in various formats (JSON, CSV).
+/// Handles both user-specific data exports and admin-level data exports.
 class DataExportService {
   static final DataExportService _instance = DataExportService._internal();
   factory DataExportService() => _instance;
@@ -15,12 +18,15 @@ class DataExportService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AnalyticsService _analytics = AnalyticsService();
 
-  // Export all user data
+  /// Exports user data from Firestore in a structured format.
   Future<Map<String, dynamic>> exportUserData({
     required String userId,
     List<String>? dataTypes,
   }) async {
     try {
+
+            // Initialize export structure with metadata
+
       final exportData = <String, dynamic>{
         'export_info': {
           'exported_at': DateTime.now().toIso8601String(),
@@ -35,7 +41,8 @@ class DataExportService {
         'analytics': [],
       };
 
-      // Export user profile
+      
+      // Export user profile if requested
       if (dataTypes == null || dataTypes.contains('profile')) {
         final userDoc = await _firestore.collection('users').doc(userId).get();
         if (userDoc.exists) {
@@ -56,7 +63,8 @@ class DataExportService {
         }).toList();
       }
 
-      // Export loans
+    // Export loans if requested
+
       if (dataTypes == null || dataTypes.contains('loans')) {
         final loansSnapshot = await _firestore
             .collection('loans')
@@ -88,7 +96,7 @@ class DataExportService {
         exportData['analytics'] = analyticsData;
       }
 
-      // Track export event
+      // Track analytics event for the export
       await _analytics.trackFeatureUsage(
         featureName: 'data_export',
         parameters: {
@@ -109,13 +117,19 @@ class DataExportService {
     }
   }
 
-  // Export admin data (for administrators)
+   /// Exports admin-level data from Firestore with optional date filtering.
+  /// [startDate]: Optional start date for filtering data
+  /// [endDate]: Optional end date for filtering data
+  /// [dataTypes]: Optional list of specific data types to export
+  /// Returns a map containing all requested admin data
   Future<Map<String, dynamic>> exportAdminData({
     DateTime? startDate,
     DateTime? endDate,
     List<String>? dataTypes,
   }) async {
     try {
+
+      // Initialize export structure with metadata
       final exportData = <String, dynamic>{
         'export_info': {
           'exported_at': DateTime.now().toIso8601String(),
@@ -134,7 +148,7 @@ class DataExportService {
         'system_settings': {},
       };
 
-      // Export users
+   // Export users data if requested
       if (dataTypes == null || dataTypes.contains('users')) {
         Query usersQuery = _firestore.collection('users');
         if (startDate != null) {
@@ -161,7 +175,7 @@ class DataExportService {
         }).toList();
       }
 
-      // Export transactions
+      // Export transactions data if requested
       if (dataTypes == null || dataTypes.contains('transactions')) {
         Query transactionsQuery = _firestore.collection('transactions');
         if (startDate != null) {
@@ -188,7 +202,7 @@ class DataExportService {
         }).toList();
       }
 
-      // Export loans
+    // Export loans data if requested
       if (dataTypes == null || dataTypes.contains('loans')) {
         Query loansQuery = _firestore.collection('loans');
         if (startDate != null) {
