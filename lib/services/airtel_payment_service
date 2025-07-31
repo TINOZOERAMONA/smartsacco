@@ -1,0 +1,207 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class AirtelPaymentScreenUG extends StatefulWidget {
+  const AirtelPaymentScreenUG({Key? key}) : super(key: key);
+
+  @override
+  _AirtelPaymentScreenUGState createState() => _AirtelPaymentScreenUGState();
+}
+
+class _AirtelPaymentScreenUGState extends State<AirtelPaymentScreenUG> {
+  final _formKey = GlobalKey<FormState>();
+  final _phoneController = TextEditingController();
+  final _amountController = TextEditingController();
+  bool _isLoading = false;
+  String? _transactionStatus;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Uganda-specific configurations
+  final String _countryCode = '+256';
+  final String _currency = 'UGX';
+  final double _maxAmount = 5000000; // 5M UGX max
+  final RegExp _phoneRegex = RegExp(r'^(0|7|7)\d{8}$'); // Ugandan Airtel numbers
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initiatePayment() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception('User not logged in');
+
+      // Create payment record
+      final paymentData = {
+        'userId': user.uid,
+        'phone': '$_countryCode${_phoneController.text.substring(1)}', // Convert 07... to +2567...
+        'amount': double.parse(_amountController.text),
+        'currency': _currency,
+        'status': 'pending',
+        'network': 'Airtel',
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      final docRef = await _firestore.collection('ug_payments').add(paymentData);
+
+      // Simulate processing time (replace with actual API call to Airtel UG)
+      await Future.delayed(const Duration(seconds: 3));
+
+      // Update with transaction ID
+      await docRef.update({
+        'status': 'completed',
+        'transactionId': 'UGX_${DateTime.now().millisecondsSinceEpoch}',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        _isLoading = false;
+        _transactionStatus = 'SUCCESS';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment sent via Airtel Money Uganda!')),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _transactionStatus = 'FAILED';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Airtel Money Uganda'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Airtel Uganda Number',
+                  hintText: '0751234567',
+                  prefixText: '$_countryCode ',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.phone_android),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Enter your Airtel number';
+                  }
+                  if (!_phoneRegex.hasMatch(value)) {
+                    return 'Valid formats: 075..., 077..., 070...';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Amount ($_currency)',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.money),
+                  suffixText: _currency,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Enter amount';
+                  }
+                  final amount = double.tryParse(value);
+                  if (amount == null) return 'Invalid amount';
+                  if (amount < 500) return 'Minimum: 500 UGX';
+                  if (amount > _maxAmount) return 'Maximum: ${_maxAmount.toStringAsFixed(0)} UGX';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 30),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                ElevatedButton(
+                  onPressed: _initiatePayment,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.red[700], // Airtel red
+                  ),
+                  child: const Text(
+                    'PAY WITH AIRTEL MONEY',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              if (_transactionStatus != null) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _transactionStatus == 'SUCCESS'
+                        ? Colors.green[100]
+                        : Colors.red[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _transactionStatus == 'SUCCESS'
+                            ? Icons.check_circle
+                            : Icons.error,
+                        color: _transactionStatus == 'SUCCESS'
+                            ? Colors.green
+                            : Colors.red,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _transactionStatus == 'SUCCESS'
+                            ? 'Payment successful!'
+                            : 'Payment failed. Try again.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: _transactionStatus == 'SUCCESS'
+                              ? Colors.green[800]
+                              : Colors.red[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const Spacer(),
+              const Text(
+                'By continuing, you agree to Airtel Money Uganda terms',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
