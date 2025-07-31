@@ -5,6 +5,7 @@ import 'package:smartsacco/models/depositmodel.dart';
 
 
 
+// display user's deposit history
 class PaymentHistoryPage extends StatefulWidget {
   const PaymentHistoryPage({super.key});
 
@@ -16,19 +17,22 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
   List<Deposit> _deposits = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController(); //controller for search field
 
   @override
   void initState() {
     super.initState();
-    _loadDeposits();
+    _loadDeposits(); //loads deposit when widget initializes
   }
 
+  // Loads deposit history from backend
   Future<void> _loadDeposits() async {
     try {
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 1));
 
+
+      // Mock data - in a real app this would come from an API
       setState(() {
         _deposits = [
           Deposit(
@@ -58,19 +62,22 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
             phoneNumber: '256772987654',
           ),
         ];
-        _isLoading = false;
+        _isLoading = false; // Loading complete
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load deposits: ${e.toString()}';
-        _isLoading = false;
+        _isLoading = false;  
       });
     }
   }
+
+  /// Shows a dialog to initiate a new mobile money payment
   Future<void> _initiateMomoPayment(BuildContext context) async {
     final amountController = TextEditingController();
     final phoneController = TextEditingController();
 
+   // Show payment dialog
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -111,6 +118,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           ],
         ),
         actions: [
+           // Cancel button
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
@@ -127,6 +135,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
         ],
       ),
     );
+
+      // If user proceeded with payment
      if (result == true) {
       final amount = double.parse(amountController.text);
       final phone = phoneController.text;
@@ -135,6 +145,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
 
+     // Create new deposit record
       final newDeposit = Deposit(
         id: 'DEP-${DateTime.now().millisecondsSinceEpoch}',
         amount: amount,
@@ -145,17 +156,21 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
         phoneNumber: phone,
       );
 
+    // Add to beginning of list (most recent first)
       setState(() {
         _deposits.insert(0, newDeposit);
         _isLoading = false;
       });
 
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Payment initiated successfully!')),
       );
     }
   }
 
+  
+  /// Filters deposits based on search query
   List<Deposit> get _filteredDeposits {
     if (_searchController.text.isEmpty) return _deposits;
     return _deposits.where((deposit) {
@@ -177,6 +192,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
           ),
         ],
       ),
+
+      // Floating action button for new deposits
       floatingActionButton: FloatingActionButton(
         onPressed: () => _initiateMomoPayment(context),
         child: const Icon(Icons.add),
@@ -194,7 +211,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              onChanged: (value) => setState(() {}),
+              onChanged: (value) => setState(() {}), // Rebuild on search text change
             ),
           ),
           Expanded(
@@ -205,6 +222,8 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+  
+  /// Builds the appropriate body content based on current state
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -230,6 +249,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
       return const Center(child: Text('No deposits found'));
     }
 
+    // Deposit list view
     return ListView.builder(
       itemCount: _filteredDeposits.length,
       itemBuilder: (context, index) {
@@ -239,6 +259,9 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+  
+  
+   /// Builds a card widget for a single deposit
   Widget _buildDepositCard(Deposit deposit) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -291,6 +314,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+ /// Shows a bottom sheet with detailed deposit information
   void _showDepositDetails(Deposit deposit) {
     showModalBottomSheet(
       context: context,
@@ -332,6 +356,7 @@ class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
     );
   }
 
+   /// Helper method to build a consistent detail row with label and value
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),

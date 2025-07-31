@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 class LoanApplicationScreen extends StatefulWidget {
   final String memberId;
   final double memberSavings;
-  final Function(Map<String, dynamic>) onSubmit;
+  final Function(Map<String, dynamic>) onSubmit; //callback for submission
 
   const LoanApplicationScreen({
     super.key,
@@ -20,8 +20,8 @@ class LoanApplicationScreen extends StatefulWidget {
 }
 
 class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>(); //form key validation
+  final _fullNameController = TextEditingController(); //all text controllers
   final _phoneNumberController = TextEditingController();
   final _amountController = TextEditingController();
   final _purposeController = TextEditingController();
@@ -33,15 +33,18 @@ class _LoanApplicationScreenState extends State<LoanApplicationScreen> {
   final _nextOfKinPhoneController = TextEditingController();
   final _nextOfKinRelationshipController = TextEditingController();
   
+  //form state variables
   DateTime? _ninExpiryDate;
   bool _agreeToTerms = false;
   List<PlatformFile> _documents = [];
   bool _isSubmitting = false;
 
+  //loan parameters
   String _loanType = 'Personal';
   int _repaymentPeriod = 3; // Default to minimum period
   final double _interestRate = 12.0;
 
+//terms and conditions text
   final String _termsAndConditions = """
 TERMS AND CONDITIONS FOR LOAN APPLICATION
 
@@ -127,6 +130,7 @@ I have read, understood, and agree to abide by all the above terms and condition
     super.dispose();
   }
 
+ //fetches member details from firestore and pre-fills the form
   Future<void> _fetchMemberDetails() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -160,6 +164,7 @@ I have read, understood, and agree to abide by all the above terms and condition
     }
   }
 
+//show date picker for selecting NIN expiry date
   Future<void> _selectNinExpiry() async {
     final date = await showDatePicker(
       context: context,
@@ -175,6 +180,7 @@ I have read, understood, and agree to abide by all the above terms and condition
     }
   }
 
+//opens file picker for document uploads
   Future<void> _pickDocuments() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -194,6 +200,7 @@ I have read, understood, and agree to abide by all the above terms and condition
     }
   }
 
+/// Validates National ID Number (NIN) format
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
@@ -283,6 +290,7 @@ I have read, understood, and agree to abide by all the above terms and condition
     setState(() => _isSubmitting = true);
 
     try {
+      //parse from values
       final amount = double.parse(_amountController.text);
       final monthlyIncome = double.tryParse(_monthlyIncomeController.text) ?? 0;
       final now = DateTime.now();
@@ -293,6 +301,7 @@ I have read, understood, and agree to abide by all the above terms and condition
       final monthlyPayment = (amount / _repaymentPeriod) + monthlyInterest;
       final totalRepayment = monthlyPayment * _repaymentPeriod;
 
+     //application data
       final application = {
         'memberId': widget.memberId,
         'fullName': _fullNameController.text.trim(),
@@ -325,6 +334,7 @@ I have read, understood, and agree to abide by all the above terms and condition
         'verificationNotes': '',
       };
 
+     // submit through callback
       await widget.onSubmit(application);
 
       if (mounted) {

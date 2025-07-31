@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
 
+//A model class representing a deposit transaction
 class Deposit {
   final String id;
   final double amount;
@@ -15,7 +16,7 @@ class Deposit {
   final String? phoneNumber;
   final String? transactionId;
 
-
+/// Constructor for creating a Deposit instance
  Deposit({
     required this.id,
     required this.amount,
@@ -28,6 +29,8 @@ class Deposit {
   });
  
 
+  /// Factory constructor to create Deposit from JSON data
+  /// Used when parsing API responses or database records
   factory Deposit.fromJson(Map<String, dynamic> json) {
     return Deposit(
       id: json['id'],
@@ -41,6 +44,8 @@ class Deposit {
     );
   }
 
+  /// Converts Deposit object to JSON format
+  /// Useful for API requests or database storage
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -54,14 +59,19 @@ class Deposit {
     };
   }
 
+
+  /// Formats the transaction date for display
+  /// Returns string in format like "Jan 1, 2023 02:30 PM"
   String getFormattedDate() {
     return DateFormat('MMM d, y hh:mm a').format(date);
   }
 
+  /// Formats the amount for display with currency
+  /// Returns string like "UGX 10,000.00"
   String getAmountText() {
     return 'UGX ${NumberFormat('#,##0.00').format(amount)}';
   }
-
+/// Returns a color based on transaction status
   Color getStatusColor() {
     switch (status.toLowerCase()) {
       case 'completed':

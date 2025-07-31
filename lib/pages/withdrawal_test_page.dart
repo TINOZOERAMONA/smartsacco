@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/transaction_validation_service.dart';
 import '../services/momoservices.dart';
 
+
+
+/// A test page for validating withdrawal functionality.
 class WithdrawalTestPage extends StatefulWidget {
   const WithdrawalTestPage({super.key});
 
@@ -15,6 +18,7 @@ class WithdrawalTestPage extends StatefulWidget {
 }
 
 class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
+  // Services and database instances
   final TransactionValidationService _validationService =
       TransactionValidationService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,12 +27,12 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
   String? _currentUserId;
   double _currentSavings = 0.0;
 
-  // Test data
+   // Form controllers
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   String _selectedMethod = 'MTN MoMo';
 
-  // Test results
+   // Test results tracking
   Map<String, dynamic>? _lastTestResult;
   final List<Map<String, dynamic>> _testHistory = [];
 
@@ -45,20 +49,25 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     super.dispose();
   }
 
+  
+  /// Fetches the currently authenticated user
   Future<void> _getCurrentUser() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       setState(() {
         _currentUserId = user.uid;
       });
-      await _loadCurrentSavings();
+      await _loadCurrentSavings();// Load user's savings after getting user
     }
   }
 
+    /// Loads the current savings balance from Firestore
   Future<void> _loadCurrentSavings() async {
     if (_currentUserId == null) return;
 
     try {
+
+            // Query all savings documents for the current user
       final savingsSnapshot = await _firestore
           .collection('users')
           .doc(_currentUserId)
@@ -79,6 +88,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     }
   }
 
+  /// Main method to execute the withdrawal test sequence
   Future<void> _testWithdrawal() async {
     if (_currentUserId == null) {
       _showError('User not authenticated');
@@ -88,6 +98,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     final amount = double.tryParse(_amountController.text);
     final phone = _phoneController.text.trim();
 
+  // Validate basic input requirements
     if (amount == null || amount <= 0) {
       _showError('Please enter a valid amount');
       return;
@@ -225,6 +236,8 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     }
   }
 
+ 
+  /// Tests the MTN Mobile Money service integration
   Future<Map<String, dynamic>> _testMTNMoMoService(
     double amount,
     String phone,
@@ -234,7 +247,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
 
       final momoService = MomoService();
 
-      // Format phone number
+           // Format phone number (convert from 07... to 2567...)
       final formattedPhone = phone.startsWith('0') ? phone.substring(1) : phone;
       final fullPhone = '256$formattedPhone';
 
@@ -267,6 +280,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     }
   }
 
+ /// Simulates a withdrawal transaction in Firestore
   Future<Map<String, dynamic>> _testWithdrawalTransaction(
     double amount,
     String phone,
@@ -334,6 +348,8 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
       return {'valid': false, 'error': 'Transaction processing failed: $e'};
     }
   }
+
+  /// Validates that transaction records were properly created in Firestore
 
   Future<Map<String, dynamic>> _testDatabaseValidation(
     String transactionId,
@@ -409,6 +425,7 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     }
   }
 
+  /// Verifies that the user's balance was correctly updated
   Future<Map<String, dynamic>> _testBalanceUpdate(double amount) async {
     try {
       print('🔍 Testing balance update...');
@@ -449,6 +466,8 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     }
   }
 
+
+  /// Adds a test result to the history and updates last result
   void _addTestResult(String testName, bool passed, String message) {
     final result = {
       'testName': testName,
@@ -471,12 +490,14 @@ class _WithdrawalTestPageState extends State<WithdrawalTestPage> {
     );
   }
 
+  /// Shows an error message snackbar
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
+   /// Formats a numeric amount as currency string
   String _formatCurrency(double amount) {
     return 'UGX ${amount.toStringAsFixed(2)}';
   }

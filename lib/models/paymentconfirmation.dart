@@ -5,12 +5,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+
+
+/// A confirmation page that displays the result of a payment transaction
+/// Shows either success or failure state with transaction details
 class PaymentConfirmationPage extends StatelessWidget {
   final Map<String, dynamic> paymentDetails;
   
   const PaymentConfirmationPage({
     super.key,
-    required this.paymentDetails,
+    required this.paymentDetails,// Required payment details containing transaction information
   });
 
   @override
@@ -24,7 +28,7 @@ class PaymentConfirmationPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Payment Confirmation'),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false,// Disable back button to force using the dashboard button
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -32,11 +36,13 @@ class PaymentConfirmationPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
+              // Status icon (success/failure)
               isSuccess ? Icons.check_circle : Icons.error,
               color: isSuccess ? Colors.green : Colors.red,
               size: 80,
             ),
             const SizedBox(height: 24),
+              // Status title
             Text(
               isSuccess ? 'Payment Successful!' : 'Payment Failed',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -44,6 +50,7 @@ class PaymentConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+               // Status description
             Text(
               isSuccess 
                   ? 'Your deposit has been initiated successfully'
@@ -67,10 +74,14 @@ class PaymentConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 32),
+
+              // Navigation button to return to dashboard
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+
+                  // Navigate back to the first route (dashboard)
                   Navigator.popUntil(context, (route) => route.isFirst);
                 },
                 child: const Text('Back to Dashboard'),

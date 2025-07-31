@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//screen for accessing airtel money payments
 class AirtelPaymentScreenUG extends StatefulWidget {
   const AirtelPaymentScreenUG({Key? key}) : super(key: key);
 
@@ -10,36 +11,53 @@ class AirtelPaymentScreenUG extends StatefulWidget {
 }
 
 class _AirtelPaymentScreenUGState extends State<AirtelPaymentScreenUG> {
+  
+  //form key validation
   final _formKey = GlobalKey<FormState>();
+
+   // Controllers for form fields
   final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
+
+  // UI state variables
   bool _isLoading = false;
   String? _transactionStatus;
+
+  // Firestore instance for database operations
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Uganda-specific configurations
   final String _countryCode = '+256';
   final String _currency = 'UGX';
   final double _maxAmount = 5000000; // 5M UGX max
+
+    // Regular expression to validate Ugandan Airtel numbers
+  // Valid formats: 075..., 077..., 070...
   final RegExp _phoneRegex = RegExp(r'^(0|7|7)\d{8}$'); // Ugandan Airtel numbers
 
   @override
   void dispose() {
+
+    // Clean up controllers when widget is disposed
     _phoneController.dispose();
     _amountController.dispose();
     super.dispose();
   }
 
+ /// Initiates the Airtel Money payment process
   Future<void> _initiatePayment() async {
+
+     // Validate form inputs before proceeding
     if (!_formKey.currentState!.validate()) return;
 
+// Set loading state to show progress indicator
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not logged in');
 
-      // Create payment record
+      // Prepare payment data for Firestore
       final paymentData = {
         'userId': user.uid,
         'phone': '$_countryCode${_phoneController.text.substring(1)}', // Convert 07... to +2567...
@@ -50,18 +68,20 @@ class _AirtelPaymentScreenUGState extends State<AirtelPaymentScreenUG> {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
+      // Add payment record to Firestore
       final docRef = await _firestore.collection('ug_payments').add(paymentData);
 
       // Simulate processing time (replace with actual API call to Airtel UG)
       await Future.delayed(const Duration(seconds: 3));
 
-      // Update with transaction ID
+       // Update payment record with completion details
       await docRef.update({
         'status': 'completed',
-        'transactionId': 'UGX_${DateTime.now().millisecondsSinceEpoch}',
+        'transactionId': 'UGX_${DateTime.now().millisecondsSinceEpoch}',// Generate unique transaction ID
         'updatedAt': FieldValue.serverTimestamp(),
       });
-
+    
+    // Update UI state for success
       setState(() {
         _isLoading = false;
         _transactionStatus = 'SUCCESS';
@@ -102,7 +122,7 @@ class _AirtelPaymentScreenUGState extends State<AirtelPaymentScreenUG> {
                 decoration: InputDecoration(
                   labelText: 'Airtel Uganda Number',
                   hintText: '0751234567',
-                  prefixText: '$_countryCode ',
+                  prefixText: '$_countryCode ',// Show country code prefix
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.phone_android),
                 ),
@@ -193,6 +213,8 @@ class _AirtelPaymentScreenUGState extends State<AirtelPaymentScreenUG> {
                 ),
               ],
               const Spacer(),
+
+               // Footer with terms and conditions
               const Text(
                 'By continuing, you agree to Airtel Money Uganda terms',
                 textAlign: TextAlign.center,
