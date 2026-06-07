@@ -80,8 +80,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDF_CropfRkSoTzv6EYy4Oc0tKkxQXw3nU',
-    appId: '1:478118410168:web:9f53b773ffb6f0e777814d',
+    apiKey: 'AIzaSyCvRxly1DOUi06qf9dz4lsAUvuO3TM2WhM',
+    appId: '1:478118410168:web:749fdb877166f64b77814d',
     messagingSenderId: '478118410168',
     projectId: 'smartsacco-df4ce',
     authDomain: 'smartsacco-df4ce.firebaseapp.com',

@@ -25,14 +25,14 @@ import 'package:smartsacco/pages/payment_status_screen.dart';
 import 'package:smartsacco/models/paymentconfirmation.dart';
 //import 'package:smartsacco/pages/settings_page.dart';
 import 'package:smartsacco/services/user_preferences_service.dart';
-import 'dart:io' as io;
+//import 'dart:io' as io;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  if (kDebugMode) {
-    io.HttpClient.enableTimelineLogging = true;
-  }
+  //if (kDebugMode) {
+    //io.HttpClient.enableTimelineLogging = true;
+  //}
 
   runApp(const LoadingApp()); // Show loading UI quickly
 
